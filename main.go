@@ -12,7 +12,40 @@ var archPackages = []string{
 	"perl-term-readkey",
 }
 
-var ubuntuPackages = []string{}
+var ubuntuPackages = []string{
+	"apt-transport-https",
+	"awscli",
+	"ca-certificates",
+	"chromium-browser",
+	"colordiff",
+	"curl",
+	"fd-find",
+	"flameshot",
+	"git",
+	"htop",
+	"hub",
+	"ipcalc",
+	"jq",
+	"libbz2-dev",
+	"libssl-dev",
+	"libterm-readkey-perl",
+	"network-manager-openvpn-gnome",
+	"openvpn",
+	"pass",
+	"pwgen",
+	"resolvconf",
+	"shellcheck",
+	"software-properties-common",
+	"terminator",
+	"tldr",
+	"vagrant",
+	"vim",
+	"vim-gtk",
+	"vim-nox",
+	"virtualbox",
+	"xclip",
+	"xkcdpass",
+}
 
 func main() {
 	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
