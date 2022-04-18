@@ -9,6 +9,7 @@ import (
 var archPackages = []string{
 	"git-delta",
 	"noto-fonts-emoji", // https://chrpaul.de/2019/07/Enable-colour-emoji-support-on-Manjaro-Linux.html we should add this config here
+	"perl-term-readkey",
 }
 
 var ubuntuPackages = []string{}
