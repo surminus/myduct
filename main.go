@@ -76,6 +76,11 @@ func dotfiles() {
 	}
 
 	v.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}.Create()
+
+	if v.Attribute.Platform.ID == "manjaro" {
+		v.Directory{Path: "~/.config/terminator"}.Create()
+		v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.laptop"}.Create()
+	}
 }
 
 func runtimeEnvs() {
