@@ -6,12 +6,26 @@ import (
 	v "github.com/surminus/viaduct"
 )
 
+var archPackages = []string{
+	"git-delta",
+}
+
+var ubuntuPackages = []string{}
+
 func main() {
 	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
 
+	zsh()
 	vim()
 	dotfiles()
 	runtimeEnvs()
+	tools()
+}
+
+func zsh() {
+	v.Package{Name: "zsh", Sudo: true}.Install()
+	v.Git{Path: "~/.oh-my-zsh", URL: "https://github.com/ohmyzsh/ohmyzsh.git"}.Create()
+	v.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions", URL: "https://github.com/zsh-users/zsh-autosuggestions"}.Create()
 }
 
 func vim() {
@@ -52,13 +66,15 @@ func dotfiles() {
 
 	for _, file := range files {
 		// I opted against forcibly removing files, but I should JFDI
-		v.File{Path: "~/." + file}.Delete()
+		// v.File{Path: "~/." + file}.Delete()
 
 		v.Link{
 			Path:   "~/." + file,
 			Source: filepath.Join(v.Attribute.User.HomeDir, ".dotfiles", file), // This should also expand tildes
 		}.Create()
 	}
+
+	v.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}.Create()
 }
 
 func runtimeEnvs() {
@@ -75,4 +91,18 @@ func runtimeEnvs() {
 			URL:  url,
 		}.Create()
 	}
+}
+
+func tools() {
+	v.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"}.Create()
+
+	var pkgs []string
+	switch v.Attribute.Platform.ID {
+	case "manjaro":
+		pkgs = archPackages
+	default:
+		pkgs = ubuntuPackages
+	}
+
+	v.Packages{Names: pkgs, Sudo: true}.Install()
 }
