@@ -79,7 +79,7 @@ func dotfiles() {
 
 	if v.Attribute.Platform.ID == "manjaro" {
 		v.Directory{Path: "~/.config/terminator"}.Create()
-		v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.laptop"}.Create()
+		v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}.Create()
 	}
 }
 
