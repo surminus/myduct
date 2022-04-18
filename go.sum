@@ -35,6 +35,8 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/surminus/viaduct v0.0.0-20211229122258-0756ac90352e h1:qm9MmVc9Z6OrOwenZg/j7/AWu9NsWTXtGXHvR2/4lJ4=
 github.com/surminus/viaduct v0.0.0-20211229122258-0756ac90352e/go.mod h1:whiT0oTl7hzuy4INJ0tLvAHHL6xAl57JHzTa5YeU7Jk=
+github.com/surminus/viaduct v0.1.0 h1:uzT7Btfneb0ZNNsaccnuoQbZFK+VVa1zyZ3X0kSO59A=
+github.com/surminus/viaduct v0.1.0/go.mod h1:j3CbUPTJOEH0raJY0otNZxPIWBUXcDRaes2NeO65dlU=
 github.com/xanzy/ssh-agent v0.2.1 h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=
 github.com/xanzy/ssh-agent v0.2.1/go.mod h1:mLlQY/MoOhWBj+gOGMQkOeiEvkx+8pJSI+0Bx9h2kr4=
 golang.org/x/crypto v0.0.0-20190219172222-a4c6cb3142f2/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
