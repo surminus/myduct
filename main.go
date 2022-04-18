@@ -11,6 +11,7 @@ func main() {
 
 	vim()
 	dotfiles()
+	runtimeEnvs()
 }
 
 func vim() {
@@ -56,6 +57,22 @@ func dotfiles() {
 		v.Link{
 			Path:   "~/." + file,
 			Source: filepath.Join(v.Attribute.User.HomeDir, ".dotfiles", file), // This should also expand tildes
+		}.Create()
+	}
+}
+
+func runtimeEnvs() {
+	envs := map[string]string{
+		"https://github.com/kamatama41/tfenv.git": "~/.tfenv",
+		"https://github.com/pyenv/pyenv.git":      "~/.pyenv",
+		"https://github.com/rbenv/rbenv.git":      "~/.rbenv",
+		"https://github.com/syndbg/goenv.git":     "~/.goenv",
+	}
+
+	for url, path := range envs {
+		v.Git{
+			Path: path,
+			URL:  url,
 		}.Create()
 	}
 }
