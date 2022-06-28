@@ -8,8 +8,11 @@ import (
 
 var archPackages = []string{
 	"git-delta",
+	"nodejs",
 	"noto-fonts-emoji", // https://chrpaul.de/2019/07/Enable-colour-emoji-support-on-Manjaro-Linux.html we should add this config here
 	"perl-term-readkey",
+	"seahorse",
+	"yarn",
 }
 
 var ubuntuPackages = []string{
@@ -69,18 +72,6 @@ func vim() {
 		URL:  "https://github.com/Shougo/dein.vim",
 	}.Create()
 
-	var pkgs []string
-	switch v.Attribute.Platform.ID {
-	case "manjaro":
-		pkgs = []string{"python", "python-pip"}
-	default:
-		pkgs = []string{"python3", "python3-pip"}
-	}
-
-	v.Packages{Names: pkgs, Sudo: true}.Install()
-	v.Execute{Command: "pip install --user pynvim"}.Run()
-
-	// Allow recursive creates
 	v.Directory{Path: "~/.vim/swapfiles"}.Create()
 }
 
@@ -115,6 +106,9 @@ func dotfiles() {
 		v.Directory{Path: "~/.config/terminator"}.Create()
 		v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}.Create()
 	}
+
+	v.Directory{Path: "~/.vim"}.Create()
+	v.Link{Path: "~/.vim/coc-settings.json", Source: "~/.dotfiles/coc-settings.json"}.Create()
 }
 
 func runtimeEnvs() {
@@ -127,8 +121,9 @@ func runtimeEnvs() {
 
 	for url, path := range envs {
 		v.Git{
-			Path: path,
-			URL:  url,
+			Path:      path,
+			URL:       url,
+			Reference: "refs/heads/master",
 		}.Create()
 	}
 }
