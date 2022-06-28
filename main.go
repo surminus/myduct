@@ -7,7 +7,10 @@ import (
 )
 
 var archPackages = []string{
+	"bat",
+	"fzf",
 	"git-delta",
+	"github-cli",
 	"nodejs",
 	"noto-fonts-emoji", // https://chrpaul.de/2019/07/Enable-colour-emoji-support-on-Manjaro-Linux.html we should add this config here
 	"perl-term-readkey",
