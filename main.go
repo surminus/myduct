@@ -80,8 +80,9 @@ func vim() {
 
 func dotfiles() {
 	v.Git{
-		Path: "~/.dotfiles",
-		URL:  "git@github.com:surminus/dotfiles.git",
+		Path:   "~/.dotfiles",
+		URL:    "git@github.com:surminus/dotfiles.git",
+		Ensure: true,
 	}.Create()
 
 	files := []string{
