@@ -61,6 +61,7 @@ func main() {
 	dotfiles()
 	runtimeEnvs()
 	tools()
+	tmux()
 }
 
 func zsh() {
@@ -151,4 +152,13 @@ func tools() {
 	}
 
 	v.Package{Names: pkgs, Sudo: true}.Install()
+}
+
+func tmux() {
+	v.Git{
+		Path:      "~/.tmux/plugins/tpm",
+		URL:       "https://github.com/tmux-plugins/tpm",
+		Reference: "refs/heads/master",
+		Ensure:    true,
+	}.Create()
 }
