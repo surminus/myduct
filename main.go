@@ -15,12 +15,14 @@ var archPackages = []string{
 	"noto-fonts-emoji", // https://chrpaul.de/2019/07/Enable-colour-emoji-support-on-Manjaro-Linux.html we should add this config here
 	"perl-term-readkey",
 	"seahorse",
+	"tmux",
 	"yarn",
 }
 
 var ubuntuPackages = []string{
 	"apt-transport-https",
 	"awscli",
+	"bat",
 	"ca-certificates",
 	"chromium-browser",
 	"colordiff",
@@ -28,6 +30,7 @@ var ubuntuPackages = []string{
 	"fd-find",
 	"flameshot",
 	"git",
+	"git-delta",
 	"htop",
 	"hub",
 	"ipcalc",
@@ -40,10 +43,12 @@ var ubuntuPackages = []string{
 	"pass",
 	"pwgen",
 	"resolvconf",
+	"ripgrep",
 	"shellcheck",
 	"software-properties-common",
 	"terminator",
 	"tldr",
+	"tmux",
 	"vagrant",
 	"vim",
 	"vim-gtk",
