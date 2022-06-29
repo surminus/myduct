@@ -142,5 +142,5 @@ func tools() {
 		pkgs = ubuntuPackages
 	}
 
-	v.Packages{Names: pkgs, Sudo: true}.Install()
+	v.Package{Names: pkgs, Sudo: true}.Install()
 }
