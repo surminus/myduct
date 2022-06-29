@@ -70,11 +70,6 @@ func zsh() {
 }
 
 func vim() {
-	v.Git{
-		Path: filepath.Join(v.Attribute.User.HomeDir, ".cache", "dein", "repos", "github.com", "Shougo", "dein.vim"),
-		URL:  "https://github.com/Shougo/dein.vim",
-	}.Create()
-
 	v.Directory{Path: "~/.vim/swapfiles"}.Create()
 }
 
@@ -100,17 +95,29 @@ func dotfiles() {
 
 		v.Link{
 			Path:   "~/." + file,
-			Source: filepath.Join(v.Attribute.User.HomeDir, ".dotfiles", file), // This should also expand tildes
+			Source: filepath.Join("~/.dotfiles", file),
 		}.Create()
 	}
 
 	v.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}.Create()
 
+	// Add terminator configuration
+	v.Directory{Path: "~/.config/terminator"}.Create()
 	if v.Attribute.Platform.ID == "manjaro" {
-		v.Directory{Path: "~/.config/terminator"}.Create()
 		v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}.Create()
 	}
 
+	if v.Attribute.Platform.IDLike == "ubuntu" {
+		if v.Attribute.Hostname == "laura-hub" {
+			v.Directory{Path: "~/.config/terminator"}.Create()
+			v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.desktop"}.Create()
+		} else {
+			v.Directory{Path: "~/.config/terminator"}.Create()
+			v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.laptop"}.Create()
+		}
+	}
+
+	// Ensure CoC is set up correctly
 	v.Directory{Path: "~/.vim"}.Create()
 	v.Link{Path: "~/.vim/coc-settings.json", Source: "~/.dotfiles/coc-settings.json"}.Create()
 }
