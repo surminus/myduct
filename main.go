@@ -136,6 +136,7 @@ func runtimeEnvs() {
 			Path:      path,
 			URL:       url,
 			Reference: "refs/heads/master",
+			Ensure:    true,
 		}.Create()
 	}
 }
