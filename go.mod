@@ -2,7 +2,7 @@ module github.com/surminus/myduct
 
 go 1.17
 
-require github.com/surminus/viaduct v0.1.5-0.20220630103053-7baf48d630b9
+require github.com/surminus/viaduct v0.1.5-0.20220630123645-1a305bcc46e9
 
 require (
 	github.com/emirpasic/gods v1.12.0 // indirect

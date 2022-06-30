@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"path/filepath"
 
 	v "github.com/surminus/viaduct"
@@ -61,12 +62,18 @@ var ubuntuPackages = []string{
 func main() {
 	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
 
+	aptUpdate()
 	zsh()
 	vim()
 	dotfiles()
 	runtimeEnvs()
 	tools()
 	tmux()
+	docker()
+}
+
+func aptUpdate() {
+	v.Execute{Command: "apt-get update", Sudo: true, Quiet: true}.Run()
 }
 
 func zsh() {
@@ -167,4 +174,29 @@ func tmux() {
 		Reference: "refs/heads/master",
 		Ensure:    true,
 	}.Create()
+}
+
+func docker() {
+	if v.Attribute.Platform.IDLike == "ubuntu" {
+		// We should have an apt resource that allows adding repositories
+		// using sudo, because the File resource doesn't support writing
+		// files as sudo. Instead, we should run myduct using sudo, and
+		// allow setting default attributes; or use `cp` instead of
+		// using os.WriteFile.
+		v.Execute{
+			Command: fmt.Sprintf(
+				"echo \"deb [arch=%s] https://download.docker.com/linux/ubuntu %s stable\" | sudo tee /etc/apt/sources.list.d/docker.list",
+				v.Attribute.Arch,
+				v.Attribute.Platform.UbuntuCodename,
+			),
+			Unless: "test -f /etc/apt/sources.list.d/docker.list",
+		}.Run()
+
+		aptUpdate()
+
+		v.Package{Name: "docker-ce", Sudo: true}.Install()
+	}
+
+	// We need to add a User resource here to manage users, so we can
+	// add the docker group to the user
 }
