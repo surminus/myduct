@@ -62,6 +62,7 @@ var ubuntuPackages = []string{
 func main() {
 	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
 
+	myduct()
 	aptUpdate()
 	zsh()
 	vim()
@@ -199,4 +200,14 @@ func docker() {
 
 	// We need to add a User resource here to manage users, so we can
 	// add the docker group to the user
+}
+
+func myduct() {
+	v.Git{
+		Path:   "~/.myduct",
+		URL:    "https://github.com/surminus/myduct",
+		Ensure: true,
+	}.Create()
+
+	v.Link{Path: "~/bin/myduct", Source: "~/.myduct/build/myduct"}.Create()
 }
