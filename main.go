@@ -70,6 +70,7 @@ func main() {
 	runtimeEnvs()
 	tools()
 	tmux()
+	asdf()
 	docker()
 }
 
@@ -150,7 +151,7 @@ func runtimeEnvs() {
 			URL:       url,
 			Reference: "refs/heads/master",
 			Ensure:    true,
-		}.Create()
+		}.Delete()
 	}
 }
 
@@ -175,6 +176,30 @@ func tmux() {
 		Reference: "refs/heads/master",
 		Ensure:    true,
 	}.Create()
+}
+
+func asdf() {
+	v.Git{
+		Path:      "~/.asdf",
+		URL:       "https://github.com/asdf-vm/asdf",
+		Reference: "refs/tags/v0.10.2",
+	}.Create()
+
+	v.Directory{Path: "~/.asdf/plugins"}.Create()
+
+	for plugin, url := range map[string]string{
+		"golang": "https://github.com/kennyp/asdf-golang",
+		"nodejs": "https://github.com/asdf-vm/asdf-nodejs",
+		"python": "https://github.com/danhper/asdf-python",
+		"ruby":   "https://github.com/asdf-vm/asdf-ruby",
+	} {
+		v.Git{
+			Path:      fmt.Sprintf("~/.asdf/plugins/%s", plugin),
+			URL:       url,
+			Reference: "refs/heads/master",
+			Ensure:    true,
+		}.Create()
+	}
 }
 
 func docker() {
