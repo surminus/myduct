@@ -100,6 +100,7 @@ func dotfiles() {
 		"gitconfig",
 		"terraformrc",
 		"tmux.conf",
+		"tool-versions",
 		"vimrc",
 		"zshrc",
 	}
