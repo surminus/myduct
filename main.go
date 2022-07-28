@@ -28,6 +28,7 @@ var ubuntuPackages = []string{
 	"chromium-browser",
 	"colordiff",
 	"curl",
+	"exuberant-ctags",
 	"fd-find",
 	"flameshot",
 	"git",
