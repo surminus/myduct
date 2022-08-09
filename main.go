@@ -99,6 +99,7 @@ func dotfiles() {
 	files := []string{
 		"colordiffrc",
 		"gitconfig",
+		"gitignore_global",
 		"terraformrc",
 		"tmux.conf",
 		"tool-versions",
@@ -107,8 +108,7 @@ func dotfiles() {
 	}
 
 	for _, file := range files {
-		// I opted against forcibly removing files, but I should JFDI
-		// v.File{Path: "~/." + file}.Delete()
+		v.File{Path: "~/." + file}.Delete()
 
 		v.Link{
 			Path:   "~/." + file,
