@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	v "github.com/surminus/viaduct"
 )
+
+const deltaVersion = "0.13.0"
 
 var archPackages = []string{
 	"bat",
@@ -32,7 +35,6 @@ var ubuntuPackages = []string{
 	"fd-find",
 	"flameshot",
 	"git",
-	"git-delta",
 	"htop",
 	"hub",
 	"ipcalc",
@@ -124,7 +126,7 @@ func dotfiles() {
 		v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}.Create()
 	}
 
-	if v.Attribute.Platform.IDLike == "ubuntu" {
+	if isUbuntu() {
 		if v.Attribute.Hostname == "laura-hub" {
 			v.Directory{Path: "~/.config/terminator"}.Create()
 			v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.desktop"}.Create()
@@ -160,6 +162,28 @@ func runtimeEnvs() {
 func tools() {
 	v.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"}.Create()
 
+	if isUbuntu() {
+		// vim ppa
+		v.Execute{
+			Command: fmt.Sprintf(
+				"echo \"deb https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu %s main\" | sudo tee /etc/apt/sources.list.d/vim.list",
+				v.Attribute.Platform.UbuntuCodename,
+			),
+			Unless: "test -f /etc/apt/sources.list.d/vim.list",
+		}.Run()
+
+		// git ppa
+		v.Execute{
+			Command: fmt.Sprintf(
+				"echo \"deb https://ppa.launchpadcontent.net/git-core/ppa/ubuntu %s main\" | sudo tee /etc/apt/sources.list.d/git.list",
+				v.Attribute.Platform.UbuntuCodename,
+			),
+			Unless: "test -f /etc/apt/sources.list.d/git.list",
+		}.Run()
+
+		aptUpdate()
+	}
+
 	var pkgs []string
 	switch v.Attribute.Platform.ID {
 	case "manjaro":
@@ -169,6 +193,21 @@ func tools() {
 	}
 
 	v.Package{Names: pkgs, Sudo: true}.Install()
+
+	if isUbuntu() {
+		// Install delta
+		deltaSource := fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", deltaVersion, deltaVersion)
+
+		v.Execute{
+			Command: fmt.Sprintf("wget -q %s -O /tmp/delta.deb", deltaSource),
+			Unless:  "dpkg -l | grep -q git-delta",
+		}.Run()
+
+		v.Execute{
+			Command: "sudo dpkg -i /tmp/delta.deb",
+			Unless:  "dpkg -l | grep -q git-delta",
+		}.Run()
+	}
 }
 
 func tmux() {
@@ -205,7 +244,7 @@ func asdf() {
 }
 
 func docker() {
-	if v.Attribute.Platform.IDLike == "ubuntu" {
+	if isUbuntu() {
 		// We should have an apt resource that allows adding repositories
 		// using sudo, because the File resource doesn't support writing
 		// files as sudo. Instead, we should run myduct using sudo, and
@@ -237,4 +276,8 @@ func myduct() {
 	}.Create()
 
 	v.Link{Path: "~/bin/myduct", Source: "~/.myduct/build/myduct"}.Create()
+}
+
+func isUbuntu() bool {
+	return strings.Contains(v.Attribute.Platform.IDLike, "ubuntu")
 }
