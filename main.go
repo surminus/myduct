@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -70,23 +68,17 @@ var ubuntuPackages = []string{
 func main() {
 	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
 
-	tmpdir, err := os.MkdirTemp("", "myduct")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(tmpdir)
-
 	myduct()
 	aptUpdate()
 	zsh()
 	vim()
 	dotfiles()
 	runtimeEnvs()
-	tools(tmpdir)
+	tools()
 	tmux()
 	asdf()
 	docker()
-	slack(tmpdir)
+	slack()
 }
 
 func aptUpdate() {
@@ -171,7 +163,7 @@ func runtimeEnvs() {
 	}
 }
 
-func tools(tmpdir string) {
+func tools() {
 	v.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"}.Create()
 
 	if isUbuntu() {
@@ -209,7 +201,7 @@ func tools(tmpdir string) {
 	if isUbuntu() {
 		// Install delta
 		deltaSource := fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", deltaVersion, deltaVersion)
-		deltaPkg := filepath.Join(tmpdir, "delta.deb")
+		deltaPkg := filepath.Join(v.Attribute.TmpDir, "delta.deb")
 
 		v.Execute{
 			Command: fmt.Sprintf("wget -q %s -O %s", deltaSource, deltaPkg),
@@ -232,10 +224,10 @@ func tmux() {
 	}.Create()
 }
 
-func slack(tmpdir string) {
+func slack() {
 	if isUbuntu() {
 		slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
-		slackPkg := filepath.Join(tmpdir, "slack.deb")
+		slackPkg := filepath.Join(v.Attribute.TmpDir, "slack.deb")
 
 		v.Execute{
 			Command: fmt.Sprintf("wget -q %s -O %s", slackSource, slackPkg),
