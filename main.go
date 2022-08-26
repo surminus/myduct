@@ -2,13 +2,18 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
 	v "github.com/surminus/viaduct"
 )
 
-const deltaVersion = "0.13.0"
+const (
+	deltaVersion = "0.13.0"
+	slackVersion = "4.27.156"
+)
 
 var archPackages = []string{
 	"bat",
@@ -65,16 +70,23 @@ var ubuntuPackages = []string{
 func main() {
 	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
 
+	tmpdir, err := os.MkdirTemp("", "myduct")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.RemoveAll(tmpdir)
+
 	myduct()
 	aptUpdate()
 	zsh()
 	vim()
 	dotfiles()
 	runtimeEnvs()
-	tools()
+	tools(tmpdir)
 	tmux()
 	asdf()
 	docker()
+	slack(tmpdir)
 }
 
 func aptUpdate() {
@@ -159,7 +171,7 @@ func runtimeEnvs() {
 	}
 }
 
-func tools() {
+func tools(tmpdir string) {
 	v.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"}.Create()
 
 	if isUbuntu() {
@@ -197,14 +209,15 @@ func tools() {
 	if isUbuntu() {
 		// Install delta
 		deltaSource := fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", deltaVersion, deltaVersion)
+		deltaPkg := filepath.Join(tmpdir, "delta.deb")
 
 		v.Execute{
-			Command: fmt.Sprintf("wget -q %s -O /tmp/delta.deb", deltaSource),
+			Command: fmt.Sprintf("wget -q %s -O %s", deltaSource, deltaPkg),
 			Unless:  "dpkg -l | grep -q git-delta",
 		}.Run()
 
 		v.Execute{
-			Command: "sudo dpkg -i /tmp/delta.deb",
+			Command: "sudo dpkg -i " + deltaPkg,
 			Unless:  "dpkg -l | grep -q git-delta",
 		}.Run()
 	}
@@ -217,6 +230,23 @@ func tmux() {
 		Reference: "refs/heads/master",
 		Ensure:    true,
 	}.Create()
+}
+
+func slack(tmpdir string) {
+	if isUbuntu() {
+		slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
+		slackPkg := filepath.Join(tmpdir, "slack.deb")
+
+		v.Execute{
+			Command: fmt.Sprintf("wget -q %s -O %s", slackSource, slackPkg),
+			Unless:  "dpkg -l | grep -q slack-desktop",
+		}.Run()
+
+		v.Execute{
+			Command: "sudo dpkg -i " + slackPkg,
+			Unless:  "dpkg -l | grep -q slack-desktop",
+		}.Run()
+	}
 }
 
 func asdf() {
