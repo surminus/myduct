@@ -63,6 +63,16 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/surminus/viaduct v0.1.7 h1:3PqXZbIndfwzd+dY6FFz3Eqcb71FAl8/6EMlxhwRHLE=
 github.com/surminus/viaduct v0.1.7/go.mod h1:R5F+kEjVma2t69scnVOOXJ3JHEcbrE74af+FgWiMqgc=
+github.com/surminus/viaduct v0.1.8-0.20220922103319-9b88f03ac933 h1:yJZuaRN8wJjXZW12U7cljk6MCHk/jKrwHmJeLw3rG+w=
+github.com/surminus/viaduct v0.1.8-0.20220922103319-9b88f03ac933/go.mod h1:R5F+kEjVma2t69scnVOOXJ3JHEcbrE74af+FgWiMqgc=
+github.com/surminus/viaduct v0.1.8-0.20220922103950-c093e3e63b0a h1:gHjxlwlwgsP9auEOCyQ1RupwUvf5qePDD6buaeTANRA=
+github.com/surminus/viaduct v0.1.8-0.20220922103950-c093e3e63b0a/go.mod h1:R5F+kEjVma2t69scnVOOXJ3JHEcbrE74af+FgWiMqgc=
+github.com/surminus/viaduct v0.1.8-0.20220922104331-929c9d979fb5 h1:gEgBRnu/DycW1Wyt01O41EBz46seCzRFZ/44fjFsIjY=
+github.com/surminus/viaduct v0.1.8-0.20220922104331-929c9d979fb5/go.mod h1:R5F+kEjVma2t69scnVOOXJ3JHEcbrE74af+FgWiMqgc=
+github.com/surminus/viaduct v0.1.8-0.20220922104859-310b9a61a2bd h1:36Z5o9oSPAtmqJATA+s8v8p7Pou8/SSQSUGgoj7KB8s=
+github.com/surminus/viaduct v0.1.8-0.20220922104859-310b9a61a2bd/go.mod h1:R5F+kEjVma2t69scnVOOXJ3JHEcbrE74af+FgWiMqgc=
+github.com/surminus/viaduct v0.1.8 h1:jUZZNbUvBbeGTo32TXH6bMkFLR28IssORX/u5ysDl3A=
+github.com/surminus/viaduct v0.1.8/go.mod h1:R5F+kEjVma2t69scnVOOXJ3JHEcbrE74af+FgWiMqgc=
 github.com/xanzy/ssh-agent v0.2.1/go.mod h1:mLlQY/MoOhWBj+gOGMQkOeiEvkx+8pJSI+0Bx9h2kr4=
 github.com/xanzy/ssh-agent v0.3.2 h1:eKj4SX2Fe7mui28ZgnFW5fmTz1EIr7ugo5s6wDxdHBM=
 github.com/xanzy/ssh-agent v0.3.2/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=

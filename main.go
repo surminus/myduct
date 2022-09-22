@@ -69,7 +69,8 @@ func main() {
 	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
 
 	myduct()
-	aptUpdate()
+	v.AptUpdate()
+
 	zsh()
 	vim()
 	dotfiles()
@@ -79,10 +80,6 @@ func main() {
 	asdf()
 	docker()
 	slack()
-}
-
-func aptUpdate() {
-	v.Execute{Command: "apt-get update", Sudo: true, Quiet: true}.Run()
 }
 
 func zsh() {
@@ -168,24 +165,19 @@ func tools() {
 
 	if isUbuntu() {
 		// vim ppa
-		v.Execute{
-			Command: fmt.Sprintf(
-				"echo \"deb https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu %s main\" | sudo tee /etc/apt/sources.list.d/vim.list",
-				v.Attribute.Platform.UbuntuCodename,
-			),
-			Unless: "test -f /etc/apt/sources.list.d/vim.list",
-		}.Run()
+		v.Apt{
+			Name: "vim",
+			URI:  "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
+			Sudo: true,
+		}.Add()
 
-		// git ppa
-		v.Execute{
-			Command: fmt.Sprintf(
-				"echo \"deb https://ppa.launchpadcontent.net/git-core/ppa/ubuntu %s main\" | sudo tee /etc/apt/sources.list.d/git.list",
-				v.Attribute.Platform.UbuntuCodename,
-			),
-			Unless: "test -f /etc/apt/sources.list.d/git.list",
-		}.Run()
+		v.Apt{
+			Name: "git",
+			URI:  "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
+			Sudo: true,
+		}.Add()
 
-		aptUpdate()
+		v.AptUpdate()
 	}
 
 	var pkgs []string
@@ -267,21 +259,15 @@ func asdf() {
 
 func docker() {
 	if isUbuntu() {
-		// We should have an apt resource that allows adding repositories
-		// using sudo, because the File resource doesn't support writing
-		// files as sudo. Instead, we should run myduct using sudo, and
-		// allow setting default attributes; or use `cp` instead of
-		// using os.WriteFile.
-		v.Execute{
-			Command: fmt.Sprintf(
-				"echo \"deb [arch=%s] https://download.docker.com/linux/ubuntu %s stable\" | sudo tee /etc/apt/sources.list.d/docker.list",
-				v.Attribute.Arch,
-				v.Attribute.Platform.UbuntuCodename,
-			),
-			Unless: "test -f /etc/apt/sources.list.d/docker.list",
-		}.Run()
+		v.Apt{
+			Name:       "docker",
+			URI:        "https://download.docker.com/linux/ubuntu",
+			Parameters: map[string]string{"arch": v.Attribute.Arch},
+			Source:     "stable",
+			Sudo:       true,
+		}.Add()
 
-		aptUpdate()
+		v.AptUpdate()
 
 		v.Package{Name: "docker-ce", Sudo: true}.Install()
 	}
