@@ -274,6 +274,10 @@ func docker() {
 
 	// We need to add a User resource here to manage users, so we can
 	// add the docker group to the user
+	v.Execute{
+		Command: fmt.Sprintf("usermod -G docker %s", v.Attribute.User.Username),
+		Unless:  fmt.Sprintf("grep %s /etc/group | grep -q docker", v.Attribute.User.Username),
+	}.Run()
 }
 
 func myduct() {
