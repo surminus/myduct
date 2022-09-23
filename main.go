@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	v "github.com/surminus/viaduct"
 )
@@ -127,7 +126,7 @@ func dotfiles() {
 		v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}.Create()
 	}
 
-	if isUbuntu() {
+	if v.IsUbuntu() {
 		if v.Attribute.Hostname == "laura-hub" {
 			v.Directory{Path: "~/.config/terminator"}.Create()
 			v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.desktop"}.Create()
@@ -163,7 +162,7 @@ func runtimeEnvs() {
 func tools() {
 	v.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"}.Create()
 
-	if isUbuntu() {
+	if v.IsUbuntu() {
 		// vim ppa
 		v.Apt{
 			Name: "vim",
@@ -190,7 +189,7 @@ func tools() {
 
 	v.Package{Names: pkgs, Sudo: true}.Install()
 
-	if isUbuntu() {
+	if v.IsUbuntu() {
 		// Install delta
 		deltaSource := fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", deltaVersion, deltaVersion)
 		deltaPkg := filepath.Join(v.Attribute.TmpDir, "delta.deb")
@@ -217,7 +216,7 @@ func tmux() {
 }
 
 func slack() {
-	if isUbuntu() {
+	if v.IsUbuntu() {
 		slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
 		slackPkg := filepath.Join(v.Attribute.TmpDir, "slack.deb")
 
@@ -258,7 +257,7 @@ func asdf() {
 }
 
 func docker() {
-	if isUbuntu() {
+	if v.IsUbuntu() {
 		v.Apt{
 			Name:       "docker",
 			URI:        "https://download.docker.com/linux/ubuntu",
@@ -288,8 +287,4 @@ func myduct() {
 	}.Create()
 
 	v.Link{Path: "~/bin/myduct", Source: "~/.myduct/build/myduct"}.Create()
-}
-
-func isUbuntu() bool {
-	return strings.Contains(v.Attribute.Platform.IDLike, "ubuntu")
 }
