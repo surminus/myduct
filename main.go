@@ -100,6 +100,7 @@ func dotfiles() {
 
 	files := []string{
 		"colordiffrc",
+		"gemrc",
 		"gitconfig",
 		"gitignore_global",
 		"terraformrc",
