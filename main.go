@@ -103,6 +103,7 @@ func dotfiles() {
 		"gemrc",
 		"gitconfig",
 		"gitignore_global",
+		"ripgreprc",
 		"terraformrc",
 		"tmux.conf",
 		"tool-versions",
