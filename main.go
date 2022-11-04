@@ -79,6 +79,7 @@ func main() {
 	asdf()
 	docker()
 	slack()
+	nodejs()
 }
 
 func zsh() {
@@ -289,4 +290,23 @@ func myduct() {
 	}.Create()
 
 	v.Link{Path: "~/bin/myduct", Source: "~/.myduct/build/myduct"}.Create()
+}
+
+func nodejs() {
+	v.Execute{
+		Command: "curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/nodesource.gpg >/dev/null",
+		Unless:  "dpkg -l | grep -q nodejs",
+	}.Run()
+
+	v.Apt{
+		Name: "nodesource",
+		URI:  "https://deb.nodesource.com/node_18.x",
+		Parameters: map[string]string{
+			"signed-by": "/usr/share/keyrings/nodesource.gpg",
+		},
+		Sudo: true,
+	}.Add()
+
+	v.AptUpdate()
+	v.Package{Name: "nodejs", Sudo: true}.Install()
 }
