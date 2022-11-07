@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 
 	v "github.com/surminus/viaduct"
@@ -65,9 +66,14 @@ var ubuntuPackages = []string{
 }
 
 func main() {
+	if v.Attribute.User.Username != "root" {
+		log.Fatal("Must run as root")
+	}
+	v.Attribute.SetUser("laura")
+
 	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
 
-	myduct()
+	//myduct()
 	v.AptUpdate()
 
 	zsh()
@@ -83,7 +89,7 @@ func main() {
 }
 
 func zsh() {
-	v.Package{Name: "zsh", Sudo: true}.Install()
+	v.Package{Name: "zsh"}.Install()
 	v.Git{Path: "~/.oh-my-zsh", URL: "https://github.com/ohmyzsh/ohmyzsh.git"}.Create()
 	v.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions", URL: "https://github.com/zsh-users/zsh-autosuggestions"}.Create()
 }
@@ -113,8 +119,6 @@ func dotfiles() {
 	}
 
 	for _, file := range files {
-		v.File{Path: "~/." + file}.Delete()
-
 		v.Link{
 			Path:   "~/." + file,
 			Source: filepath.Join("~/.dotfiles", file),
@@ -170,13 +174,11 @@ func tools() {
 		v.Apt{
 			Name: "vim",
 			URI:  "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
-			Sudo: true,
 		}.Add()
 
 		v.Apt{
 			Name: "git",
 			URI:  "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
-			Sudo: true,
 		}.Add()
 
 		v.AptUpdate()
@@ -190,7 +192,7 @@ func tools() {
 		pkgs = ubuntuPackages
 	}
 
-	v.Package{Names: pkgs, Sudo: true}.Install()
+	v.Package{Names: pkgs}.Install()
 
 	if v.IsUbuntu() {
 		// Install delta
@@ -266,12 +268,11 @@ func docker() {
 			URI:        "https://download.docker.com/linux/ubuntu",
 			Parameters: map[string]string{"arch": v.Attribute.Arch},
 			Source:     "stable",
-			Sudo:       true,
 		}.Add()
 
 		v.AptUpdate()
 
-		v.Package{Name: "docker-ce", Sudo: true}.Install()
+		v.Package{Name: "docker-ce"}.Install()
 	}
 
 	// We need to add a User resource here to manage users, so we can
@@ -304,9 +305,8 @@ func nodejs() {
 		Parameters: map[string]string{
 			"signed-by": "/usr/share/keyrings/nodesource.gpg",
 		},
-		Sudo: true,
 	}.Add()
 
 	v.AptUpdate()
-	v.Package{Name: "nodejs", Sudo: true}.Install()
+	v.Package{Name: "nodejs"}.Install()
 }
