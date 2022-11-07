@@ -73,7 +73,7 @@ func main() {
 
 	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
 
-	//myduct()
+	myduct()
 	v.AptUpdate()
 
 	zsh()
@@ -290,7 +290,7 @@ func myduct() {
 		Ensure: true,
 	}.Create()
 
-	v.Link{Path: "~/bin/myduct", Source: "~/.myduct/build/myduct"}.Create()
+	v.Link{Path: "~/bin/myduct", Source: "~/.myduct/build/myduct"}.Delete()
 }
 
 func nodejs() {
