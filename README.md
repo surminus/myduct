@@ -48,5 +48,5 @@ Log out and log back in
 ### Run myduct
 
 ```
-~/.myduct/build/myduct
+sudo ~/.myduct/build/myduct
 ```
