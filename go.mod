@@ -4,6 +4,8 @@ go 1.17
 
 require github.com/surminus/viaduct v0.1.10
 
+replace github.com/surminus/viaduct => ../surminus/viaduct
+
 require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
