@@ -74,7 +74,14 @@ func main() {
 	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
 
 	myduct()
-	v.AptUpdate()
+
+	if v.IsUbuntu() {
+		v.AptUpdate()
+	}
+
+	if v.Attribute.Platform.IDLike == "arch" {
+		v.Execute{Command: "sudo pacman -Syy --needed"}.Run()
+	}
 
 	zsh()
 	vim()
@@ -273,14 +280,14 @@ func docker() {
 		v.AptUpdate()
 
 		v.Package{Name: "docker-ce"}.Install()
-	}
 
-	// We need to add a User resource here to manage users, so we can
-	// add the docker group to the user
-	v.Execute{
-		Command: fmt.Sprintf("usermod -G docker %s", v.Attribute.User.Username),
-		Unless:  fmt.Sprintf("grep %s /etc/group | grep -q docker", v.Attribute.User.Username),
-	}.Run()
+		// We need to add a User resource here to manage users, so we can
+		// add the docker group to the user
+		v.Execute{
+			Command: fmt.Sprintf("usermod -G docker %s", v.Attribute.User.Username),
+			Unless:  fmt.Sprintf("grep %s /etc/group | grep -q docker", v.Attribute.User.Username),
+		}.Run()
+	}
 }
 
 func myduct() {
@@ -294,19 +301,21 @@ func myduct() {
 }
 
 func nodejs() {
-	v.Execute{
-		Command: "curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/nodesource.gpg >/dev/null",
-		Unless:  "dpkg -l | grep -q nodejs",
-	}.Run()
+	if v.IsUbuntu() {
+		v.Execute{
+			Command: "curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/nodesource.gpg >/dev/null",
+			Unless:  "dpkg -l | grep -q nodejs",
+		}.Run()
 
-	v.Apt{
-		Name: "nodesource",
-		URI:  "https://deb.nodesource.com/node_18.x",
-		Parameters: map[string]string{
-			"signed-by": "/usr/share/keyrings/nodesource.gpg",
-		},
-	}.Add()
+		v.Apt{
+			Name: "nodesource",
+			URI:  "https://deb.nodesource.com/node_18.x",
+			Parameters: map[string]string{
+				"signed-by": "/usr/share/keyrings/nodesource.gpg",
+			},
+		}.Add()
 
-	v.AptUpdate()
-	v.Package{Name: "nodejs"}.Install()
+		v.AptUpdate()
+		v.Package{Name: "nodejs"}.Install()
+	}
 }
