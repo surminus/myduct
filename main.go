@@ -15,6 +15,7 @@ const (
 
 var archPackages = []string{
 	"bat",
+	"flameshot",
 	"fzf",
 	"git-delta",
 	"github-cli",
