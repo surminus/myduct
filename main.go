@@ -66,22 +66,25 @@ var ubuntuPackages = []string{
 	"xkcdpass",
 }
 
+var r = v.New()
+
 func main() {
 	if v.Attribute.User.Username != "root" {
 		log.Fatal("Must run as root")
 	}
+
 	v.Attribute.SetUser("laura")
 
-	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
+	r.Create(v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")})
 
 	myduct()
 
 	if v.IsUbuntu() {
-		v.AptUpdate()
+		r.Update(v.Apt{})
 	}
 
 	if v.Attribute.Platform.IDLike == "arch" {
-		v.Execute{Command: "sudo pacman -Syy --needed"}.Run()
+		r.Run(v.Execute{Command: "sudo pacman -Syy --needed"})
 	}
 
 	zsh()
