@@ -77,11 +77,9 @@ func main() {
 
 	r.Create(v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")})
 
-	myduct()
-
-	if v.IsUbuntu() {
-		r.Update(v.Apt{})
-	}
+	// if v.IsUbuntu() {
+	// 	r.Update(v.Apt{})
+	// }
 
 	if v.Attribute.Platform.IDLike == "arch" {
 		r.Run(v.Execute{Command: "sudo pacman -Syy --needed"})
@@ -94,27 +92,29 @@ func main() {
 	tools()
 	tmux()
 	asdf()
-	docker()
-	slack()
-	nodejs()
+	// docker()
+	// slack()
+	// nodejs()
+
+	r.Start()
 }
 
 func zsh() {
-	v.Package{Name: "zsh"}.Install()
-	v.Git{Path: "~/.oh-my-zsh", URL: "https://github.com/ohmyzsh/ohmyzsh.git"}.Create()
-	v.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions", URL: "https://github.com/zsh-users/zsh-autosuggestions"}.Create()
+	r.Install(v.Package{Name: "zsh"})
+	zsh := r.Create(v.Git{Path: "~/.oh-my-zsh", URL: "https://github.com/ohmyzsh/ohmyzsh.git"})
+	r.Create(v.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions", URL: "https://github.com/zsh-users/zsh-autosuggestions"}, v.DependsOn(zsh))
 }
 
 func vim() {
-	v.Directory{Path: "~/.vim/swapfiles"}.Create()
+	r.Create(v.Directory{Path: "~/.vim/swapfiles"})
 }
 
 func dotfiles() {
-	v.Git{
+	repo := r.Create(v.Git{
 		Path:   "~/.dotfiles",
 		URL:    "git@github.com:surminus/dotfiles.git",
 		Ensure: true,
-	}.Create()
+	})
 
 	files := []string{
 		"colordiffrc",
@@ -130,33 +130,32 @@ func dotfiles() {
 	}
 
 	for _, file := range files {
-		v.Link{
+		r.Create(v.Link{
 			Path:   "~/." + file,
 			Source: filepath.Join("~/.dotfiles", file),
-		}.Create()
+		}, v.DependsOn(repo))
 	}
 
-	v.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}.Create()
+	r.Create(v.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, v.DependsOn(repo))
 
 	// Add terminator configuration
-	v.Directory{Path: "~/.config/terminator"}.Create()
+	termdir := r.Create(v.Directory{Path: "~/.config/terminator"}, v.DependsOn(repo))
+
 	if v.Attribute.Platform.ID == "manjaro" {
-		v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}.Create()
+		r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}, v.DependsOn(repo), v.DependsOn(termdir))
 	}
 
 	if v.IsUbuntu() {
 		if v.Attribute.Hostname == "laura-hub" {
-			v.Directory{Path: "~/.config/terminator"}.Create()
-			v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.desktop"}.Create()
+			r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.desktop"}, v.DependsOn(repo), v.DependsOn(termdir))
 		} else {
-			v.Directory{Path: "~/.config/terminator"}.Create()
-			v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.laptop"}.Create()
+			r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.laptop"}, v.DependsOn(repo), v.DependsOn(termdir))
 		}
 	}
 
 	// Ensure CoC is set up correctly
-	v.Directory{Path: "~/.vim"}.Create()
-	v.Link{Path: "~/.vim/coc-settings.json", Source: "~/.dotfiles/coc-settings.json"}.Create()
+	vim := r.Create(v.Directory{Path: "~/.vim"})
+	r.Create(v.Link{Path: "~/.vim/coc-settings.json", Source: "~/.dotfiles/coc-settings.json"}, v.DependsOn(repo), v.DependsOn(vim))
 }
 
 func runtimeEnvs() {
@@ -168,31 +167,31 @@ func runtimeEnvs() {
 	}
 
 	for url, path := range envs {
-		v.Git{
+		r.Delete(v.Git{
 			Path:      path,
 			URL:       url,
 			Reference: "refs/heads/master",
 			Ensure:    true,
-		}.Delete()
+		})
 	}
 }
 
 func tools() {
-	v.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"}.Create()
+	r.Create(v.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"})
 
 	if v.IsUbuntu() {
 		// vim ppa
-		v.Apt{
+		vim := r.Add(v.Apt{
 			Name: "vim",
 			URI:  "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
-		}.Add()
+		})
 
-		v.Apt{
+		git := r.Add(v.Apt{
 			Name: "git",
 			URI:  "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
-		}.Add()
+		})
 
-		v.AptUpdate()
+		r.Update(v.Apt{}, v.DependsOn(vim), v.DependsOn(git))
 	}
 
 	var pkgs []string
@@ -203,32 +202,32 @@ func tools() {
 		pkgs = ubuntuPackages
 	}
 
-	v.Package{Names: pkgs}.Install()
+	r.Install(v.Package{Names: pkgs})
 
 	if v.IsUbuntu() {
 		// Install delta
 		deltaSource := fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", deltaVersion, deltaVersion)
 		deltaPkg := filepath.Join(v.Attribute.TmpDir, "delta.deb")
 
-		v.Execute{
+		delta := r.Run(v.Execute{
 			Command: fmt.Sprintf("wget -q %s -O %s", deltaSource, deltaPkg),
 			Unless:  "dpkg -l | grep -q git-delta",
-		}.Run()
+		})
 
-		v.Execute{
+		r.Run(v.Execute{
 			Command: "sudo dpkg -i " + deltaPkg,
 			Unless:  "dpkg -l | grep -q git-delta",
-		}.Run()
+		}, v.DependsOn(delta))
 	}
 }
 
 func tmux() {
-	v.Git{
+	r.Create(v.Git{
 		Path:      "~/.tmux/plugins/tpm",
 		URL:       "https://github.com/tmux-plugins/tpm",
 		Reference: "refs/heads/master",
 		Ensure:    true,
-	}.Create()
+	})
 }
 
 func slack() {
@@ -236,26 +235,26 @@ func slack() {
 		slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
 		slackPkg := filepath.Join(v.Attribute.TmpDir, "slack.deb")
 
-		v.Execute{
+		slack := r.Run(v.Execute{
 			Command: fmt.Sprintf("wget -q %s -O %s", slackSource, slackPkg),
 			Unless:  "dpkg -l | grep -q slack-desktop",
-		}.Run()
+		})
 
-		v.Execute{
+		r.Run(v.Execute{
 			Command: "sudo dpkg -i " + slackPkg,
 			Unless:  "dpkg -l | grep -q slack-desktop",
-		}.Run()
+		}, v.DependsOn(slack))
 	}
 }
 
 func asdf() {
-	v.Git{
+	repo := r.Create(v.Git{
 		Path:      "~/.asdf",
 		URL:       "https://github.com/asdf-vm/asdf",
 		Reference: "refs/tags/v0.10.2",
-	}.Create()
+	})
 
-	v.Directory{Path: "~/.asdf/plugins"}.Create()
+	dir := r.Create(v.Directory{Path: "~/.asdf/plugins"}, v.DependsOn(repo))
 
 	for plugin, url := range map[string]string{
 		"golang": "https://github.com/kennyp/asdf-golang",
@@ -263,63 +262,52 @@ func asdf() {
 		"python": "https://github.com/danhper/asdf-python",
 		"ruby":   "https://github.com/asdf-vm/asdf-ruby",
 	} {
-		v.Git{
+		r.Create(v.Git{
 			Path:      fmt.Sprintf("~/.asdf/plugins/%s", plugin),
 			URL:       url,
 			Reference: "refs/heads/master",
 			Ensure:    true,
-		}.Create()
+		}, v.DependsOn(dir))
 	}
 }
 
 func docker() {
 	if v.IsUbuntu() {
-		v.Apt{
+		apt := r.Add(v.Apt{
 			Name:       "docker",
 			URI:        "https://download.docker.com/linux/ubuntu",
 			Parameters: map[string]string{"arch": v.Attribute.Arch},
 			Source:     "stable",
-		}.Add()
+		})
 
-		v.AptUpdate()
-
-		v.Package{Name: "docker-ce"}.Install()
+		update := r.Update(v.Apt{}, v.DependsOn(apt))
+		install := r.Install(v.Package{Name: "docker-ce"}, v.DependsOn(update), v.DependsOn(apt))
 
 		// We need to add a User resource here to manage users, so we can
 		// add the docker group to the user
-		v.Execute{
+		r.Run(v.Execute{
 			Command: fmt.Sprintf("usermod -G docker %s", v.Attribute.User.Username),
 			Unless:  fmt.Sprintf("grep %s /etc/group | grep -q docker", v.Attribute.User.Username),
-		}.Run()
+		}, v.DependsOn(install))
 	}
-}
-
-func myduct() {
-	v.Git{
-		Path:   "~/.myduct",
-		URL:    "https://github.com/surminus/myduct",
-		Ensure: true,
-	}.Create()
-
-	v.Link{Path: "~/bin/myduct", Source: "~/.myduct/build/myduct"}.Delete()
 }
 
 func nodejs() {
 	if v.IsUbuntu() {
-		v.Execute{
+		key := r.Run(v.Execute{
 			Command: "curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/nodesource.gpg >/dev/null",
 			Unless:  "dpkg -l | grep -q nodejs",
-		}.Run()
+		})
 
-		v.Apt{
+		apt := r.Add(v.Apt{
 			Name: "nodesource",
 			URI:  "https://deb.nodesource.com/node_18.x",
 			Parameters: map[string]string{
 				"signed-by": "/usr/share/keyrings/nodesource.gpg",
 			},
-		}.Add()
+		}, v.DependsOn(key))
 
-		v.AptUpdate()
-		v.Package{Name: "nodejs"}.Install()
+		update := r.Update(v.Apt{}, v.DependsOn(apt))
+		r.Install(v.Package{Name: "nodejs"}, v.DependsOn(update))
 	}
 }
