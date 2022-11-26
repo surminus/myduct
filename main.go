@@ -76,35 +76,28 @@ func main() {
 
 	r.Create(v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")})
 
-	var deps []*v.Resource
-	if v.IsUbuntu() {
-		deps = append(deps, r.Update(v.Apt{}))
-	}
-
 	if v.Attribute.Platform.IDLike == "arch" {
 		r.Run(v.E("sudo pacman -Syy --needed"))
 	}
 
-	z := zsh(deps)
+	zsh()
 	vim()
 	dotfiles()
 	runtimeEnvs()
-	t := tools(z)
+	tools()
 	tmux()
 	asdf()
-	d := docker(t)
-	s := slack(d)
-	nodejs(s)
+	docker()
+	slack()
+	nodejs()
 
 	r.Start()
 }
 
-func zsh(deps []*v.Resource) (p []*v.Resource) {
-	p = append(p, r.Create(v.P("zsh"), deps...))
+func zsh() {
+	r.Create(v.P("zsh"))
 	zsh := r.Create(v.Git{Path: "~/.oh-my-zsh", URL: "https://github.com/ohmyzsh/ohmyzsh.git"})
 	r.Create(v.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions", URL: "https://github.com/zsh-users/zsh-autosuggestions"}, zsh)
-
-	return p
 }
 
 func vim() {
@@ -178,22 +171,21 @@ func runtimeEnvs() {
 	}
 }
 
-func tools(deps []*v.Resource) (p []*v.Resource) {
+func tools() {
 	r.Create(v.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"})
 
+	var vim, git *v.Resource
 	if v.IsUbuntu() {
 		// vim ppa
-		vim := r.Create(v.Apt{
+		vim = r.Create(v.Apt{
 			Name: "vim",
 			URI:  "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
 		})
 
-		git := r.Create(v.Apt{
+		git = r.Create(v.Apt{
 			Name: "git",
 			URI:  "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
 		})
-
-		deps = append(deps, r.Update(v.Apt{}, append(deps, []*v.Resource{vim, git}...)...))
 	}
 
 	var pkgs []string
@@ -204,7 +196,7 @@ func tools(deps []*v.Resource) (p []*v.Resource) {
 		pkgs = ubuntuPackages
 	}
 
-	p = append(p, r.Create(v.Ps(pkgs...), deps...))
+	r.Create(v.Ps(pkgs...), r.Update(v.Apt{}), vim, git)
 
 	if v.IsUbuntu() {
 		// Install delta
@@ -216,13 +208,11 @@ func tools(deps []*v.Resource) (p []*v.Resource) {
 			Unless:  "dpkg -l | grep -q git-delta",
 		})
 
-		p = append(p, r.Run(v.Execute{
+		r.Run(v.Execute{
 			Command: "sudo dpkg -i " + deltaPkg,
 			Unless:  "dpkg -l | grep -q git-delta",
-		}, append(deps, delta)...))
+		}, delta)
 	}
-
-	return p
 }
 
 func tmux() {
@@ -234,7 +224,7 @@ func tmux() {
 	})
 }
 
-func slack(deps []*v.Resource) (p []*v.Resource) {
+func slack() {
 	if v.IsUbuntu() {
 		slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
 		slackPkg := filepath.Join(v.Attribute.TmpDir, "slack.deb")
@@ -244,13 +234,11 @@ func slack(deps []*v.Resource) (p []*v.Resource) {
 			Unless:  "dpkg -l | grep -q slack-desktop",
 		})
 
-		p = append(p, r.Run(v.Execute{
+		r.Run(v.Execute{
 			Command: "sudo dpkg -i " + slackPkg,
 			Unless:  "dpkg -l | grep -q slack-desktop",
-		}, append(deps, slack)...))
+		}, slack)
 	}
-
-	return p
 }
 
 func asdf() {
@@ -277,7 +265,7 @@ func asdf() {
 	}
 }
 
-func docker(deps []*v.Resource) (p []*v.Resource) {
+func docker() {
 	if v.IsUbuntu() {
 		apt := r.Create(v.Apt{
 			Name:       "docker",
@@ -286,21 +274,18 @@ func docker(deps []*v.Resource) (p []*v.Resource) {
 			Source:     "stable",
 		})
 
-		update := r.Update(v.Apt{}, append(deps, apt)...)
-		install := r.Create(v.P("docker-ce"), append(deps, []*v.Resource{update, apt}...)...)
+		install := r.Create(v.P("docker-ce"), r.Update(v.Apt{}, apt))
 
 		// We need to add a User resource here to manage users, so we can
 		// add the docker group to the user
-		p = append(p, r.Run(v.Execute{
+		r.Run(v.Execute{
 			Command: fmt.Sprintf("usermod -G docker %s", v.Attribute.User.Username),
 			Unless:  fmt.Sprintf("grep %s /etc/group | grep -q docker", v.Attribute.User.Username),
-		}, install))
+		}, install)
 	}
-
-	return p
 }
 
-func nodejs(deps []*v.Resource) (p []*v.Resource) {
+func nodejs() {
 	if v.IsUbuntu() {
 		key := r.Run(v.Execute{
 			Command: "curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/nodesource.gpg >/dev/null",
@@ -315,9 +300,7 @@ func nodejs(deps []*v.Resource) (p []*v.Resource) {
 			},
 		}, key)
 
-		update := r.Update(v.Apt{}, append(deps, apt)...)
-		p = append(p, r.Create(v.P("nodejs"), append(deps, update)...))
+		update := r.Update(v.Apt{}, apt)
+		r.Create(v.P("nodejs"), update)
 	}
-
-	return p
 }
