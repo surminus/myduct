@@ -76,36 +76,39 @@ func main() {
 
 	r.Create(v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")})
 
-	// if v.IsUbuntu() {
-	// 	r.Update(v.Apt{})
-	// }
-
-	if v.Attribute.Platform.IDLike == "arch" {
-		r.Run(v.Execute{Command: "sudo pacman -Syy --needed"})
+	var deps []*v.Resource
+	if v.IsUbuntu() {
+		deps = append(deps, r.Update(v.Apt{}))
 	}
 
-	zsh()
+	if v.Attribute.Platform.IDLike == "arch" {
+		r.Run(v.E("sudo pacman -Syy --needed"))
+	}
+
+	z := zsh(deps)
 	vim()
 	dotfiles()
 	runtimeEnvs()
-	tools()
+	t := tools(z)
 	tmux()
 	asdf()
-	// docker()
-	// slack()
-	// nodejs()
+	d := docker(t)
+	s := slack(d)
+	nodejs(s)
 
 	r.Start()
 }
 
-func zsh() {
-	r.Install(v.Package{Name: "zsh"})
+func zsh(deps []*v.Resource) (p []*v.Resource) {
+	p = append(p, r.Create(v.P("zsh"), deps...))
 	zsh := r.Create(v.Git{Path: "~/.oh-my-zsh", URL: "https://github.com/ohmyzsh/ohmyzsh.git"})
-	r.Create(v.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions", URL: "https://github.com/zsh-users/zsh-autosuggestions"}, v.DependsOn(zsh))
+	r.Create(v.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions", URL: "https://github.com/zsh-users/zsh-autosuggestions"}, zsh)
+
+	return p
 }
 
 func vim() {
-	r.Create(v.Directory{Path: "~/.vim/swapfiles"})
+	r.Create(v.D("~/.vim/swapfiles"))
 }
 
 func dotfiles() {
@@ -132,29 +135,29 @@ func dotfiles() {
 		r.Create(v.Link{
 			Path:   "~/." + file,
 			Source: filepath.Join("~/.dotfiles", file),
-		}, v.DependsOn(repo))
+		}, repo)
 	}
 
-	r.Create(v.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, v.DependsOn(repo))
+	r.Create(v.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, repo)
 
 	// Add terminator configuration
-	termdir := r.Create(v.Directory{Path: "~/.config/terminator"}, v.DependsOn(repo))
+	termdir := r.Create(v.Directory{Path: "~/.config/terminator"}, repo)
 
 	if v.Attribute.Platform.ID == "manjaro" {
-		r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}, v.DependsOn(repo), v.DependsOn(termdir))
+		r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}, repo, termdir)
 	}
 
 	if v.IsUbuntu() {
 		if v.Attribute.Hostname == "laura-hub" {
-			r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.desktop"}, v.DependsOn(repo), v.DependsOn(termdir))
+			r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.desktop"}, repo, termdir)
 		} else {
-			r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.laptop"}, v.DependsOn(repo), v.DependsOn(termdir))
+			r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.laptop"}, repo, termdir)
 		}
 	}
 
 	// Ensure CoC is set up correctly
 	vim := r.Create(v.Directory{Path: "~/.vim"})
-	r.Create(v.Link{Path: "~/.vim/coc-settings.json", Source: "~/.dotfiles/coc-settings.json"}, v.DependsOn(repo), v.DependsOn(vim))
+	r.Create(v.Link{Path: "~/.vim/coc-settings.json", Source: "~/.dotfiles/coc-settings.json"}, repo, vim)
 }
 
 func runtimeEnvs() {
@@ -175,22 +178,22 @@ func runtimeEnvs() {
 	}
 }
 
-func tools() {
+func tools(deps []*v.Resource) (p []*v.Resource) {
 	r.Create(v.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"})
 
 	if v.IsUbuntu() {
 		// vim ppa
-		vim := r.Add(v.Apt{
+		vim := r.Create(v.Apt{
 			Name: "vim",
 			URI:  "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
 		})
 
-		git := r.Add(v.Apt{
+		git := r.Create(v.Apt{
 			Name: "git",
 			URI:  "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
 		})
 
-		r.Update(v.Apt{}, v.DependsOn(vim), v.DependsOn(git))
+		deps = append(deps, r.Update(v.Apt{}, append(deps, []*v.Resource{vim, git}...)...))
 	}
 
 	var pkgs []string
@@ -201,7 +204,7 @@ func tools() {
 		pkgs = ubuntuPackages
 	}
 
-	r.Install(v.Package{Names: pkgs})
+	p = append(p, r.Create(v.Ps(pkgs...), deps...))
 
 	if v.IsUbuntu() {
 		// Install delta
@@ -213,11 +216,13 @@ func tools() {
 			Unless:  "dpkg -l | grep -q git-delta",
 		})
 
-		r.Run(v.Execute{
+		p = append(p, r.Run(v.Execute{
 			Command: "sudo dpkg -i " + deltaPkg,
 			Unless:  "dpkg -l | grep -q git-delta",
-		}, v.DependsOn(delta))
+		}, append(deps, delta)...))
 	}
+
+	return p
 }
 
 func tmux() {
@@ -229,7 +234,7 @@ func tmux() {
 	})
 }
 
-func slack() {
+func slack(deps []*v.Resource) (p []*v.Resource) {
 	if v.IsUbuntu() {
 		slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
 		slackPkg := filepath.Join(v.Attribute.TmpDir, "slack.deb")
@@ -239,11 +244,13 @@ func slack() {
 			Unless:  "dpkg -l | grep -q slack-desktop",
 		})
 
-		r.Run(v.Execute{
+		p = append(p, r.Run(v.Execute{
 			Command: "sudo dpkg -i " + slackPkg,
 			Unless:  "dpkg -l | grep -q slack-desktop",
-		}, v.DependsOn(slack))
+		}, append(deps, slack)...))
 	}
+
+	return p
 }
 
 func asdf() {
@@ -253,7 +260,7 @@ func asdf() {
 		Reference: "refs/tags/v0.10.2",
 	})
 
-	dir := r.Create(v.Directory{Path: "~/.asdf/plugins"}, v.DependsOn(repo))
+	dir := r.Create(v.Directory{Path: "~/.asdf/plugins"}, repo)
 
 	for plugin, url := range map[string]string{
 		"golang": "https://github.com/kennyp/asdf-golang",
@@ -266,47 +273,51 @@ func asdf() {
 			URL:       url,
 			Reference: "refs/heads/master",
 			Ensure:    true,
-		}, v.DependsOn(dir))
+		}, dir)
 	}
 }
 
-func docker() {
+func docker(deps []*v.Resource) (p []*v.Resource) {
 	if v.IsUbuntu() {
-		apt := r.Add(v.Apt{
+		apt := r.Create(v.Apt{
 			Name:       "docker",
 			URI:        "https://download.docker.com/linux/ubuntu",
 			Parameters: map[string]string{"arch": v.Attribute.Arch},
 			Source:     "stable",
 		})
 
-		update := r.Update(v.Apt{}, v.DependsOn(apt))
-		install := r.Install(v.Package{Name: "docker-ce"}, v.DependsOn(update), v.DependsOn(apt))
+		update := r.Update(v.Apt{}, append(deps, apt)...)
+		install := r.Create(v.P("docker-ce"), append(deps, []*v.Resource{update, apt}...)...)
 
 		// We need to add a User resource here to manage users, so we can
 		// add the docker group to the user
-		r.Run(v.Execute{
+		p = append(p, r.Run(v.Execute{
 			Command: fmt.Sprintf("usermod -G docker %s", v.Attribute.User.Username),
 			Unless:  fmt.Sprintf("grep %s /etc/group | grep -q docker", v.Attribute.User.Username),
-		}, v.DependsOn(install))
+		}, install))
 	}
+
+	return p
 }
 
-func nodejs() {
+func nodejs(deps []*v.Resource) (p []*v.Resource) {
 	if v.IsUbuntu() {
 		key := r.Run(v.Execute{
 			Command: "curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/nodesource.gpg >/dev/null",
 			Unless:  "dpkg -l | grep -q nodejs",
 		})
 
-		apt := r.Add(v.Apt{
+		apt := r.Create(v.Apt{
 			Name: "nodesource",
 			URI:  "https://deb.nodesource.com/node_18.x",
 			Parameters: map[string]string{
 				"signed-by": "/usr/share/keyrings/nodesource.gpg",
 			},
-		}, v.DependsOn(key))
+		}, key)
 
-		update := r.Update(v.Apt{}, v.DependsOn(apt))
-		r.Install(v.Package{Name: "nodejs"}, v.DependsOn(update))
+		update := r.Update(v.Apt{}, append(deps, apt)...)
+		p = append(p, r.Create(v.P("nodejs"), append(deps, update)...))
 	}
+
+	return p
 }
