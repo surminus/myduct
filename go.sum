@@ -76,6 +76,10 @@ github.com/surminus/viaduct v0.1.13-0.20221126150632-f562258590c1 h1:rxbSKn1ojYB
 github.com/surminus/viaduct v0.1.13-0.20221126150632-f562258590c1/go.mod h1:JwMLZIHcoONQoP5GPdWc8eJJDbAQ1IZaUFUh3Ov/5JM=
 github.com/surminus/viaduct v0.1.13-0.20221126153945-0e098971b94d h1:nNrtrb9BtEE8MnSvfsYLhwGL9q4UcdCqLZfXKXw1TVk=
 github.com/surminus/viaduct v0.1.13-0.20221126153945-0e098971b94d/go.mod h1:JwMLZIHcoONQoP5GPdWc8eJJDbAQ1IZaUFUh3Ov/5JM=
+github.com/surminus/viaduct v0.1.13-0.20221126170406-1492c96e3bd8 h1:HFQLAWNE4oQQR8miV4pFf6Syn6JbTzlp7lp/cOBxLLc=
+github.com/surminus/viaduct v0.1.13-0.20221126170406-1492c96e3bd8/go.mod h1:JwMLZIHcoONQoP5GPdWc8eJJDbAQ1IZaUFUh3Ov/5JM=
+github.com/surminus/viaduct v0.1.13-0.20221126172935-e0303970f34c h1:wfxP9QNfxEnydp4ecuBaYLc245bmC0vB2uuEjqPqrmM=
+github.com/surminus/viaduct v0.1.13-0.20221126172935-e0303970f34c/go.mod h1:JwMLZIHcoONQoP5GPdWc8eJJDbAQ1IZaUFUh3Ov/5JM=
 github.com/xanzy/ssh-agent v0.2.1/go.mod h1:mLlQY/MoOhWBj+gOGMQkOeiEvkx+8pJSI+0Bx9h2kr4=
 github.com/xanzy/ssh-agent v0.3.2 h1:eKj4SX2Fe7mui28ZgnFW5fmTz1EIr7ugo5s6wDxdHBM=
 github.com/xanzy/ssh-agent v0.3.2/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
