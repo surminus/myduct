@@ -15,6 +15,7 @@ const (
 
 var archPackages = []string{
 	"bat",
+	"ctags",
 	"flameshot",
 	"fzf",
 	"git-delta",
@@ -78,7 +79,7 @@ func main() {
 	r.Create(v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")})
 
 	if v.Attribute.Platform.IDLike == "arch" {
-		r.Run(v.E("sudo pacman -Syy --needed"))
+		r.WithLock(r.Run(v.E("sudo pacman -Syy --needed")))
 	}
 
 	zsh()
@@ -193,11 +194,11 @@ func tools() {
 	switch v.Attribute.Platform.ID {
 	case "manjaro":
 		pkgs = archPackages
+		r.Create(v.Ps(pkgs...))
 	default:
 		pkgs = ubuntuPackages
+		r.Create(v.Ps(pkgs...), r.Update(v.Apt{}), vim, git)
 	}
-
-	r.Create(v.Ps(pkgs...), r.Update(v.Apt{}), vim, git)
 
 	if v.IsUbuntu() {
 		// Install delta
