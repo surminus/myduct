@@ -1,8 +1,8 @@
 module github.com/surminus/myduct
 
-go 1.17
+go 1.19
 
-require github.com/surminus/viaduct v0.1.12
+require github.com/surminus/viaduct v0.2.0
 
 require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect

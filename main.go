@@ -15,6 +15,7 @@ const (
 
 var archPackages = []string{
 	"bat",
+	"ctags",
 	"flameshot",
 	"fzf",
 	"git-delta",
@@ -66,22 +67,19 @@ var ubuntuPackages = []string{
 	"xkcdpass",
 }
 
+var r = v.New()
+
 func main() {
 	if v.Attribute.User.Username != "root" {
 		log.Fatal("Must run as root")
 	}
+
 	v.Attribute.SetUser("laura")
 
-	v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")}.Create()
-
-	myduct()
-
-	if v.IsUbuntu() {
-		v.AptUpdate()
-	}
+	r.Create(v.Directory{Path: filepath.Join(v.Attribute.User.HomeDir, "bin")})
 
 	if v.Attribute.Platform.IDLike == "arch" {
-		v.Execute{Command: "sudo pacman -Syy --needed"}.Run()
+		r.WithLock(r.Run(v.E("sudo pacman -Syy --needed")))
 	}
 
 	zsh()
@@ -94,24 +92,26 @@ func main() {
 	docker()
 	slack()
 	nodejs()
+
+	r.Start()
 }
 
 func zsh() {
-	v.Package{Name: "zsh"}.Install()
-	v.Git{Path: "~/.oh-my-zsh", URL: "https://github.com/ohmyzsh/ohmyzsh.git"}.Create()
-	v.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions", URL: "https://github.com/zsh-users/zsh-autosuggestions"}.Create()
+	r.Create(v.P("zsh"))
+	zsh := r.Create(v.Git{Path: "~/.oh-my-zsh", URL: "https://github.com/ohmyzsh/ohmyzsh.git"})
+	r.Create(v.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions", URL: "https://github.com/zsh-users/zsh-autosuggestions"}, zsh)
 }
 
 func vim() {
-	v.Directory{Path: "~/.vim/swapfiles"}.Create()
+	r.Create(v.D("~/.vim/swapfiles"))
 }
 
 func dotfiles() {
-	v.Git{
+	repo := r.Create(v.Git{
 		Path:   "~/.dotfiles",
 		URL:    "git@github.com:surminus/dotfiles.git",
 		Ensure: true,
-	}.Create()
+	})
 
 	files := []string{
 		"colordiffrc",
@@ -127,33 +127,32 @@ func dotfiles() {
 	}
 
 	for _, file := range files {
-		v.Link{
+		r.Create(v.Link{
 			Path:   "~/." + file,
 			Source: filepath.Join("~/.dotfiles", file),
-		}.Create()
+		}, repo)
 	}
 
-	v.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}.Create()
+	r.Create(v.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, repo)
 
 	// Add terminator configuration
-	v.Directory{Path: "~/.config/terminator"}.Create()
+	termdir := r.Create(v.Directory{Path: "~/.config/terminator"}, repo)
+
 	if v.Attribute.Platform.ID == "manjaro" {
-		v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}.Create()
+		r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}, repo, termdir)
 	}
 
 	if v.IsUbuntu() {
 		if v.Attribute.Hostname == "laura-hub" {
-			v.Directory{Path: "~/.config/terminator"}.Create()
-			v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.desktop"}.Create()
+			r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.desktop"}, repo, termdir)
 		} else {
-			v.Directory{Path: "~/.config/terminator"}.Create()
-			v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.laptop"}.Create()
+			r.Create(v.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.laptop"}, repo, termdir)
 		}
 	}
 
 	// Ensure CoC is set up correctly
-	v.Directory{Path: "~/.vim"}.Create()
-	v.Link{Path: "~/.vim/coc-settings.json", Source: "~/.dotfiles/coc-settings.json"}.Create()
+	vim := r.Create(v.Directory{Path: "~/.vim"})
+	r.Create(v.Link{Path: "~/.vim/coc-settings.json", Source: "~/.dotfiles/coc-settings.json"}, repo, vim)
 }
 
 func runtimeEnvs() {
@@ -165,67 +164,66 @@ func runtimeEnvs() {
 	}
 
 	for url, path := range envs {
-		v.Git{
+		r.Delete(v.Git{
 			Path:      path,
 			URL:       url,
 			Reference: "refs/heads/master",
 			Ensure:    true,
-		}.Delete()
+		})
 	}
 }
 
 func tools() {
-	v.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"}.Create()
+	r.Create(v.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"})
 
+	var vim, git *v.Resource
 	if v.IsUbuntu() {
 		// vim ppa
-		v.Apt{
+		vim = r.Create(v.Apt{
 			Name: "vim",
 			URI:  "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
-		}.Add()
+		})
 
-		v.Apt{
+		git = r.Create(v.Apt{
 			Name: "git",
 			URI:  "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
-		}.Add()
-
-		v.AptUpdate()
+		})
 	}
 
 	var pkgs []string
 	switch v.Attribute.Platform.ID {
 	case "manjaro":
 		pkgs = archPackages
+		r.Create(v.Ps(pkgs...))
 	default:
 		pkgs = ubuntuPackages
+		r.Create(v.Ps(pkgs...), r.Update(v.Apt{}), vim, git)
 	}
-
-	v.Package{Names: pkgs}.Install()
 
 	if v.IsUbuntu() {
 		// Install delta
 		deltaSource := fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", deltaVersion, deltaVersion)
 		deltaPkg := filepath.Join(v.Attribute.TmpDir, "delta.deb")
 
-		v.Execute{
+		delta := r.Run(v.Execute{
 			Command: fmt.Sprintf("wget -q %s -O %s", deltaSource, deltaPkg),
 			Unless:  "dpkg -l | grep -q git-delta",
-		}.Run()
+		})
 
-		v.Execute{
+		r.Run(v.Execute{
 			Command: "sudo dpkg -i " + deltaPkg,
 			Unless:  "dpkg -l | grep -q git-delta",
-		}.Run()
+		}, delta)
 	}
 }
 
 func tmux() {
-	v.Git{
+	r.Create(v.Git{
 		Path:      "~/.tmux/plugins/tpm",
 		URL:       "https://github.com/tmux-plugins/tpm",
 		Reference: "refs/heads/master",
 		Ensure:    true,
-	}.Create()
+	})
 }
 
 func slack() {
@@ -233,26 +231,26 @@ func slack() {
 		slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
 		slackPkg := filepath.Join(v.Attribute.TmpDir, "slack.deb")
 
-		v.Execute{
+		slack := r.Run(v.Execute{
 			Command: fmt.Sprintf("wget -q %s -O %s", slackSource, slackPkg),
 			Unless:  "dpkg -l | grep -q slack-desktop",
-		}.Run()
+		})
 
-		v.Execute{
+		r.Run(v.Execute{
 			Command: "sudo dpkg -i " + slackPkg,
 			Unless:  "dpkg -l | grep -q slack-desktop",
-		}.Run()
+		}, slack)
 	}
 }
 
 func asdf() {
-	v.Git{
+	repo := r.Create(v.Git{
 		Path:      "~/.asdf",
 		URL:       "https://github.com/asdf-vm/asdf",
 		Reference: "refs/tags/v0.10.2",
-	}.Create()
+	})
 
-	v.Directory{Path: "~/.asdf/plugins"}.Create()
+	dir := r.Create(v.Directory{Path: "~/.asdf/plugins"}, repo)
 
 	for plugin, url := range map[string]string{
 		"golang": "https://github.com/kennyp/asdf-golang",
@@ -260,63 +258,51 @@ func asdf() {
 		"python": "https://github.com/danhper/asdf-python",
 		"ruby":   "https://github.com/asdf-vm/asdf-ruby",
 	} {
-		v.Git{
+		r.Create(v.Git{
 			Path:      fmt.Sprintf("~/.asdf/plugins/%s", plugin),
 			URL:       url,
 			Reference: "refs/heads/master",
 			Ensure:    true,
-		}.Create()
+		}, dir)
 	}
 }
 
 func docker() {
 	if v.IsUbuntu() {
-		v.Apt{
+		apt := r.Create(v.Apt{
 			Name:       "docker",
 			URI:        "https://download.docker.com/linux/ubuntu",
 			Parameters: map[string]string{"arch": v.Attribute.Arch},
 			Source:     "stable",
-		}.Add()
+		})
 
-		v.AptUpdate()
-
-		v.Package{Name: "docker-ce"}.Install()
+		install := r.Create(v.P("docker-ce"), r.Update(v.Apt{}, apt))
 
 		// We need to add a User resource here to manage users, so we can
 		// add the docker group to the user
-		v.Execute{
+		r.Run(v.Execute{
 			Command: fmt.Sprintf("usermod -G docker %s", v.Attribute.User.Username),
 			Unless:  fmt.Sprintf("grep %s /etc/group | grep -q docker", v.Attribute.User.Username),
-		}.Run()
+		}, install)
 	}
-}
-
-func myduct() {
-	v.Git{
-		Path:   "~/.myduct",
-		URL:    "https://github.com/surminus/myduct",
-		Ensure: true,
-	}.Create()
-
-	v.Link{Path: "~/bin/myduct", Source: "~/.myduct/build/myduct"}.Delete()
 }
 
 func nodejs() {
 	if v.IsUbuntu() {
-		v.Execute{
+		key := r.Run(v.Execute{
 			Command: "curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/nodesource.gpg >/dev/null",
 			Unless:  "dpkg -l | grep -q nodejs",
-		}.Run()
+		})
 
-		v.Apt{
+		apt := r.Create(v.Apt{
 			Name: "nodesource",
 			URI:  "https://deb.nodesource.com/node_18.x",
 			Parameters: map[string]string{
 				"signed-by": "/usr/share/keyrings/nodesource.gpg",
 			},
-		}.Add()
+		}, key)
 
-		v.AptUpdate()
-		v.Package{Name: "nodejs"}.Install()
+		update := r.Update(v.Apt{}, apt)
+		r.Create(v.P("nodejs"), update)
 	}
 }
