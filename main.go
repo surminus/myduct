@@ -14,6 +14,20 @@ const (
 	slackVersion = "4.27.156"
 )
 
+var dotFiles = []string{
+	"colordiffrc",
+	"gemrc",
+	"gitconfig",
+	"gitignore_global",
+	"ripgreprc",
+	"terraformrc",
+	"tmux.conf",
+	"tool-versions",
+	"vale.ini",
+	"vimrc",
+	"zshrc",
+}
+
 var archPackages = []string{
 	"bat",
 	"ctags",
@@ -112,20 +126,20 @@ func dotfiles() {
 		"git@github.com:surminus/dotfiles.git",
 	))
 
-	files := []string{
-		"colordiffrc",
-		"gemrc",
-		"gitconfig",
-		"gitignore_global",
-		"ripgreprc",
-		"terraformrc",
-		"tmux.conf",
-		"tool-versions",
-		"vimrc",
-		"zshrc",
+	stylespath := "~/.vale/styles"
+	valedir := r.Add(resources.Dir(stylespath))
+	valeStyles := []string{
+		"alex",
 	}
 
-	for _, file := range files {
+	for _, style := range valeStyles {
+		r.Add(&resources.Git{
+			Path: fmt.Sprintf("%s/%s", stylespath, style),
+			URL:  fmt.Sprintf("git@github.com:errata-ai/%s", style),
+		}, valedir)
+	}
+
+	for _, file := range dotFiles {
 		r.Add(&resources.Link{
 			Path:   "~/." + file,
 			Source: filepath.Join("~/.dotfiles", file),
