@@ -1,3 +1,5 @@
 myduct
 !build/myduct
 build/test
+
+dist/

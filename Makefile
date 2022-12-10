@@ -1,2 +1,7 @@
-test:
-	go build -o build/test && sudo build/test
+.PHONY: test install
+
+run:
+	go build -o build/myduct && sudo build/myduct; rm build/myduct
+
+install:
+	go build -o ~/bin/myduct
