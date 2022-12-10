@@ -1,7 +1,7 @@
 .PHONY: test install
 
-run:
-	go build -o build/myduct && sudo build/myduct; rm build/myduct
+run: install
+	sudo build/myduct
 
 install:
-	go build -o ~/bin/myduct
+	go build -o build/myduct
