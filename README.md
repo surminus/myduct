@@ -50,7 +50,7 @@ Allows running without Go already installed.
 
 Set latest version:
 ```
-export MYDUCT_VERSION=1
+export MYDUCT_VERSION=2
 ```
 
 Install the binary:
