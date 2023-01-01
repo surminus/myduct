@@ -183,18 +183,15 @@ func tools() {
 
 	if viaduct.IsUbuntu() {
 		// Install delta
-		deltaSource := fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", deltaVersion, deltaVersion)
-		deltaPkg := filepath.Join(viaduct.Attribute.TmpDir, "delta.deb")
+		if viaduct.CommandOutput("dpkg -l | awk '/git-delta/ {print $3}'") != deltaVersion {
+			deltaSource := fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", deltaVersion, deltaVersion)
+			deltaPkg := viaduct.TmpFile("delta.deb")
 
-		delta := r.Add(&resources.Execute{
-			Command: fmt.Sprintf("wget -q %s -O %s", deltaSource, deltaPkg),
-			Unless:  "dpkg -l | grep -q git-delta",
-		})
-
-		r.Add(&resources.Execute{
-			Command: "sudo dpkg -i " + deltaPkg,
-			Unless:  "dpkg -l | grep -q git-delta",
-		}, delta)
+			delta := r.Add(resources.Wget(deltaSource, viaduct.TmpFile("delta.deb")))
+			r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+deltaPkg), delta))
+		} else {
+			viaduct.Log("Delta up to date")
+		}
 	}
 }
 
@@ -209,18 +206,17 @@ func tmux() {
 
 func slack() {
 	if viaduct.IsUbuntu() {
-		slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
-		slackPkg := filepath.Join(viaduct.Attribute.TmpDir, "slack.deb")
+		currentVersion := viaduct.CommandOutput("dpkg -l | awk '/slack-desktop/ {print $3}'")
+		if currentVersion != slackVersion {
+			viaduct.Log(currentVersion)
+			slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
+			slackPkg := viaduct.TmpFile("slack.deb")
 
-		slack := r.Add(&resources.Execute{
-			Command: fmt.Sprintf("wget -q %s -O %s", slackSource, slackPkg),
-			Unless:  "dpkg -l | grep -q slack-desktop",
-		})
-
-		r.Add(&resources.Execute{
-			Command: "sudo dpkg -i " + slackPkg,
-			Unless:  "dpkg -l | grep -q slack-desktop",
-		}, slack)
+			slack := r.Add(resources.Wget(slackSource, slackPkg))
+			r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+slackPkg), slack))
+		} else {
+			viaduct.Log("Slack up to date")
+		}
 	}
 }
 
