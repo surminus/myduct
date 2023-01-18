@@ -62,6 +62,7 @@ var ubuntuPackages = []string{
 	"libbz2-dev",
 	"libssl-dev",
 	"libterm-readkey-perl",
+	"ncdu",
 	"network-manager-openvpn-gnome",
 	"openvpn",
 	"pass",
