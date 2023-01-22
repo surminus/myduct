@@ -134,8 +134,9 @@ func dotfiles() {
 
 	for _, style := range valeStyles {
 		r.Add(&resources.Git{
-			Path: fmt.Sprintf("%s/%s", stylespath, style),
-			URL:  fmt.Sprintf("git@github.com:errata-ai/%s", style),
+			Path:      fmt.Sprintf("%s/%s", stylespath, style),
+			URL:       fmt.Sprintf("git@github.com:errata-ai/%s", style),
+			Reference: "refs/heads/master",
 		}, valedir)
 	}
 
