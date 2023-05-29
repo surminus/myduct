@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	deltaVersion = "0.13.0"
-	slackVersion = "4.27.156"
+	deltaVersion = "0.15.1"
+	slackVersion = "4.32.122"
 )
 
 var dotFiles = []string{
@@ -171,30 +171,24 @@ func dotfiles() {
 }
 
 func tools() {
-	r.Add(&resources.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git"})
+	r.Add(&resources.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git", Reference: "refs/heads/master"})
 
-	var vim, git *viaduct.Resource
 	if viaduct.IsUbuntu() {
-		// vim ppa
-		vim = r.Add(&resources.Apt{
+		vim := r.Add(&resources.Apt{
 			Name: "vim",
 			URI:  "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
 		})
 
-		git = r.Add(&resources.Apt{
+		git := r.Add(&resources.Apt{
 			Name: "git",
 			URI:  "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
 		})
+
+		r.Add(resources.Pkgs(ubuntuPackages...), vim, git)
 	}
 
-	var pkgs []string
-	switch viaduct.Attribute.Platform.ID {
-	case "manjaro":
-		pkgs = archPackages
-		r.Add(resources.Pkgs(pkgs...))
-	default:
-		pkgs = ubuntuPackages
-		r.Add(resources.Pkgs(pkgs...), vim, git)
+	if viaduct.Attribute.Platform.ID == "manjaro" {
+		r.Add(resources.Pkgs(archPackages...))
 	}
 
 	if viaduct.IsUbuntu() {
@@ -208,6 +202,14 @@ func tools() {
 		} else {
 			viaduct.Log("Delta up to date")
 		}
+	}
+
+	toolkit := r.Add(&resources.Git{Path: "~/surminus/toolkit", URL: "git@github.com:surminus/toolkit", Reference: "refs/heads/master"})
+	for _, file := range []string{"awsexport", "discord-updater"} {
+		r.Add(&resources.Link{
+			Path:   "~/bin/" + file,
+			Source: filepath.Join("~/surminus/toolkit", file),
+		}, toolkit)
 	}
 }
 
