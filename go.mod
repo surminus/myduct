@@ -2,7 +2,7 @@ module github.com/surminus/myduct
 
 go 1.19
 
-require github.com/surminus/viaduct v0.3.2-0.20230531111313-5e3a7fc9ee7c
+require github.com/surminus/viaduct v0.3.2-0.20230531115723-21452c47eb8d
 
 // replace github.com/surminus/viaduct => /home/laura/surminus/viaduct
 
