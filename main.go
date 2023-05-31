@@ -76,7 +76,6 @@ var ubuntuPackages = []string{
 	"tmux",
 	"vagrant",
 	"vim",
-	"vim-gtk",
 	"vim-nox",
 	"virtualbox",
 	"xclip",
@@ -93,6 +92,7 @@ func main() {
 	viaduct.Attribute.SetUser("laura")
 
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "bin")})
+	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "tmp")})
 
 	if viaduct.Attribute.Platform.IDLike == "arch" {
 		r.WithLock(r.Add(resources.Exec("sudo pacman -Syy --needed")))
@@ -175,13 +175,18 @@ func tools() {
 
 	if viaduct.IsUbuntu() {
 		vim := r.Add(&resources.Apt{
-			Name: "vim",
-			URI:  "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
+			Name:         "vim",
+			URI:          "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
+			Distribution: manticDistribution(),
+			SigningKey:   "8CF63AD3F06FC659",
+			Update:       true,
 		})
 
 		git := r.Add(&resources.Apt{
-			Name: "git",
-			URI:  "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
+			Name:       "git",
+			URI:        "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
+			SigningKey: "A1715D88E1DF1F24",
+			Update:     true,
 		})
 
 		r.Add(resources.Pkgs(ubuntuPackages...), vim, git)
@@ -265,10 +270,12 @@ func asdf() {
 func docker() {
 	if viaduct.IsUbuntu() {
 		apt := r.Add(&resources.Apt{
-			Name:       "docker",
-			URI:        "https://download.docker.com/linux/ubuntu",
-			Parameters: map[string]string{"arch": viaduct.Attribute.Arch},
-			Source:     "stable",
+			Name:          "docker",
+			URI:           "https://download.docker.com/linux/ubuntu",
+			Parameters:    map[string]string{"arch": viaduct.Attribute.Arch},
+			Source:        "stable",
+			Distribution:  manticDistribution(),
+			SigningKeyURL: "https://download.docker.com/linux/ubuntu/gpg",
 		})
 
 		install := r.Add(resources.Pkg("docker-ce"), r.Add(resources.AptUpdate(), apt))
@@ -284,20 +291,23 @@ func docker() {
 
 func nodejs() {
 	if viaduct.IsUbuntu() {
-		key := r.Add(&resources.Execute{
-			Command: "curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/nodesource.gpg >/dev/null",
-			Unless:  "dpkg -l | grep -q nodejs",
+		r.Add(&resources.Apt{
+			Name:          "node",
+			URI:           "https://deb.nodesource.com/node_18.x",
+			SigningKeyURL: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key",
+			Distribution:  manticDistribution(),
+			Update:        true,
 		})
 
-		apt := r.Add(&resources.Apt{
-			Name: "nodesource",
-			URI:  "https://deb.nodesource.com/node_18.x",
-			Parameters: map[string]string{
-				"signed-by": "/usr/share/keyrings/nodesource.gpg",
-			},
-		}, key)
-
-		update := r.Add(resources.AptUpdate(), apt)
-		r.Add(resources.Pkg("nodejs"), update)
+		r.Add(resources.Pkg("nodejs"))
 	}
+}
+
+func manticDistribution() string {
+	distribution := viaduct.Attribute.Platform.UbuntuCodename
+	if distribution == "mantic" {
+		distribution = "jammy"
+	}
+
+	return distribution
 }

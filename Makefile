@@ -9,5 +9,8 @@ run-quiet: install
 run-silent: install
 	sudo build/myduct --silent
 
+run-debug: install
+	sudo build/myduct --dump-manifest
+
 install:
 	go build -o build/myduct
