@@ -43,23 +43,20 @@ Log out and log back in
 
 Allows running without Go already installed.
 
-Set latest version:
+Set latest version, example:
 ```
-export MYDUCT_VERSION=$(git describe --abbrev=0 --tags | cut -d "v" -f2)
+export MYDUCT_VERSION=v11
 ```
 
 Install the binary:
 
 ```
 cd /tmp
-wget https://github.com/surminus/myduct/releases/download/v${MYDUCT_VERSION}/myduct_${MYDUCT_VERSION}_$(uname -s)_$(uname -p).tar.gz
+wget https://github.com/surminus/myduct/releases/download/${MYDUCT_VERSION}/myduct_${MYDUCT_VERSION}_$(uname -s)_$(uname -p).tar.gz
 tar zxvf myduct_${MYDUCT_VERSION}_$(uname -s)_$(uname -p).tar.gz
-git clone git@github.com:surminus/myduct.git ~/.myduct
-mkdir -p ~/.myduct/build
-mv myduct ~/.myduct/build/myduct
 ```
 
 Run it:
 ```
-sudo ~/.myduct/build/myduct
+sudo /tmp/myduct
 ```
