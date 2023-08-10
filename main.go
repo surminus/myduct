@@ -179,7 +179,7 @@ func tools() {
 		vim := r.Add(&resources.Apt{
 			Name:         "vim",
 			URI:          "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
-			Distribution: manticDistribution(),
+			Distribution: ubuntuDistribution(),
 			SigningKey:   "8CF63AD3F06FC659",
 			Update:       true,
 		})
@@ -276,7 +276,7 @@ func docker() {
 			URI:           "https://download.docker.com/linux/ubuntu",
 			Parameters:    map[string]string{"arch": viaduct.Attribute.Arch},
 			Source:        "stable",
-			Distribution:  manticDistribution(),
+			Distribution:  ubuntuDistribution(),
 			SigningKeyURL: "https://download.docker.com/linux/ubuntu/gpg",
 		})
 
@@ -297,7 +297,7 @@ func nodejs() {
 			Name:          "node",
 			URI:           "https://deb.nodesource.com/node_18.x",
 			SigningKeyURL: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key",
-			Distribution:  manticDistribution(),
+			Distribution:  ubuntuDistribution(),
 			Update:        true,
 		})
 
@@ -312,9 +312,9 @@ func user() {
 	r.Add(resources.DeleteFile("/var/lib/AccountsService/icons/laura"))
 }
 
-func manticDistribution() string {
+func ubuntuDistribution() string {
 	distribution := viaduct.Attribute.Platform.UbuntuCodename
-	if distribution == "mantic" {
+	if distribution == "mantic" || distribution == "lunar" {
 		distribution = "jammy"
 	}
 

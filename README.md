@@ -11,7 +11,7 @@ itself.
 ### Install Git
 
 ```
-sudo apt install git -y
+sudo apt install git curl -y
 ```
 
 ### Generate and add SSH key to GitHub
