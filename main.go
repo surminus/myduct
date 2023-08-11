@@ -108,6 +108,7 @@ func main() {
 	docker()
 	slack()
 	nodejs()
+	user()
 
 	r.Run()
 }
@@ -302,6 +303,10 @@ func nodejs() {
 
 		r.Add(resources.Pkg("nodejs"))
 	}
+}
+
+func user() {
+	r.Add(resources.ExecUnless("usermod -s /bin/zsh laura", "grep laura /etc/passwd | grep -q zsh"))
 }
 
 func manticDistribution() string {
