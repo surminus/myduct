@@ -307,6 +307,9 @@ func nodejs() {
 
 func user() {
 	r.Add(resources.ExecUnless("usermod -s /bin/zsh laura", "grep laura /etc/passwd | grep -q zsh"))
+
+	r.Add(resources.DeleteFile("~/.face"))
+	r.Add(resources.DeleteFile("/var/lib/AccountsService/icons/laura"))
 }
 
 func manticDistribution() string {
