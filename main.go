@@ -11,7 +11,7 @@ import (
 
 const (
 	deltaVersion = "0.15.1"
-	slackVersion = "4.32.122"
+	slackVersion = "4.33.84"
 )
 
 var dotFiles = []string{
