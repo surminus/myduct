@@ -54,6 +54,7 @@ var ubuntuPackages = []string{
 	"exuberant-ctags",
 	"fd-find",
 	"flameshot",
+	"fonts-noto-color-emoji",
 	"git",
 	"htop",
 	"hub",
