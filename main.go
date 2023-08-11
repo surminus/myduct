@@ -62,6 +62,7 @@ var ubuntuPackages = []string{
 	"jq",
 	"kitty",
 	"libbz2-dev",
+	"libffi-dev",
 	"libssl-dev",
 	"libterm-readkey-perl",
 	"ncdu",
