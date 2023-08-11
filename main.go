@@ -73,7 +73,6 @@ var ubuntuPackages = []string{
 	"ripgrep",
 	"shellcheck",
 	"software-properties-common",
-	"terminator",
 	"tldr",
 	"tmux",
 	"vagrant",
