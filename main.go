@@ -110,6 +110,7 @@ func main() {
 	slack()
 	nodejs()
 	user()
+	fonts()
 
 	r.Run()
 }
@@ -311,6 +312,10 @@ func user() {
 
 	r.Add(resources.DeleteFile("~/.face"))
 	r.Add(resources.DeleteFile("/var/lib/AccountsService/icons/laura"))
+}
+
+func fonts() {
+	r.Add(&resources.Download{URL: "https://github.com/hbin/top-programming-fonts/raw/master/Monaco-Linux.ttf", Path: "~/.local/share/fonts/Monaco-Linux.ttf", NotIfExists: true})
 }
 
 func ubuntuDistribution() string {
