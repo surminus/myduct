@@ -110,6 +110,7 @@ func main() {
 	slack()
 	nodejs()
 	user()
+	fonts()
 
 	r.Run()
 }
@@ -316,6 +317,27 @@ func user() {
 
 	r.Add(resources.DeleteFile("~/.face"))
 	r.Add(resources.DeleteFile("/var/lib/AccountsService/icons/laura"))
+}
+
+func fonts() {
+	fontdir := r.Add(resources.Dir("~/.fonts"))
+
+	fonts := map[string]string{
+		"JetBrainsMono-Bold.ttf":       "https://github.com/JetBrains/JetBrainsMono/raw/master/fonts/ttf/JetBrainsMono-Bold.ttf",
+		"JetBrainsMono-BoldItalic.ttf": "https://github.com/JetBrains/JetBrainsMono/raw/master/fonts/ttf/JetBrainsMono-BoldItalic.ttf",
+		"JetBrainsMono-Italic.ttf":     "https://github.com/JetBrains/JetBrainsMono/raw/master/fonts/ttf/JetBrainsMono-Italic.ttf",
+		"JetBrainsMono-Regular.ttf":    "https://github.com/JetBrains/JetBrainsMono/raw/master/fonts/ttf/JetBrainsMono-Regular.ttf",
+		"Monaco.ttf":                   "https://github.com/hbin/top-programming-fonts/raw/master/Monaco-Linux.ttf",
+	}
+
+	for name, url := range fonts {
+		path := viaduct.ExpandPath("~/.fonts/" + name)
+		if !viaduct.FileExists(path) {
+			r.Add(resources.Wget(url, path), fontdir)
+		}
+	}
+
+	r.Add(resources.CreateLink("~/.local/share/fonts", "~/.fonts"), fontdir)
 }
 
 func ubuntuDistribution() string {
