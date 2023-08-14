@@ -332,9 +332,7 @@ func fonts() {
 
 	for name, url := range fonts {
 		path := viaduct.ExpandPath("~/.fonts/" + name)
-		if !viaduct.FileExists(path) {
-			r.Add(resources.Wget(url, path), fontdir)
-		}
+		r.Add(&resources.Download{URL: url, Path: path, NotIfExists: true}, fontdir)
 	}
 
 	r.Add(resources.CreateLink("~/.local/share/fonts", "~/.fonts"), fontdir)
