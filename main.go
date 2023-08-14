@@ -154,7 +154,9 @@ func dotfiles() {
 	r.Add(&resources.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, repo)
 
 	// Install kitty config
-	r.Add(&resources.Link{Path: "~/.config/kitty/kitty.conf", Source: "~/.dotfiles/kitty.conf"}, repo, r.Add(resources.Dir("~/.config/kitty")))
+	kittyCfgDir := r.Add(resources.Dir("~/.config/kitty"))
+	r.Add(&resources.Git{Path: "~/.config/kitty/kitty-themes", URL: "https://github.com/dexpota/kitty-themes", Reference: "refs/heads/master"}, kittyCfgDir)
+	r.Add(&resources.Link{Path: "~/.config/kitty/kitty.conf", Source: "~/.dotfiles/kitty.conf"}, repo, kittyCfgDir)
 
 	// Add terminator configuration
 	termdir := r.Add(&resources.Directory{Path: "~/.config/terminator"}, repo)
