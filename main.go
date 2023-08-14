@@ -60,6 +60,7 @@ var ubuntuPackages = []string{
 	"hub",
 	"ipcalc",
 	"jq",
+	"kitty",
 	"libbz2-dev",
 	"libssl-dev",
 	"libterm-readkey-perl",
@@ -151,6 +152,9 @@ func dotfiles() {
 	}
 
 	r.Add(&resources.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, repo)
+
+	// Install kitty config
+	r.Add(&resources.Link{Path: "~/.config/kitty/kitty.conf", Source: "~/.dotfiles/kitty.conf"}, repo, r.Add(resources.Dir("~/.config/kitty")))
 
 	// Add terminator configuration
 	termdir := r.Add(&resources.Directory{Path: "~/.config/terminator"}, repo)
