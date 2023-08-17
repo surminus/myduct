@@ -68,6 +68,8 @@ github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81P
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/surminus/viaduct v0.3.3-0.20230814221515-c6c18092e1f9 h1:EM4SLNtzMw68LWYB+7+s7ffqccuDcLnbyQAM9g2xuOA=
 github.com/surminus/viaduct v0.3.3-0.20230814221515-c6c18092e1f9/go.mod h1:5+/RWA1aLTvnPy33SCvAH8AQG8M9QVi756Gb422eUZc=
+github.com/surminus/viaduct v0.3.3-0.20230814222016-607cf9ee9a63 h1:VZl0suPN1Ko/HDNFky+ZgL/zTdSOzhvCUo4jvJGtajg=
+github.com/surminus/viaduct v0.3.3-0.20230814222016-607cf9ee9a63/go.mod h1:5+/RWA1aLTvnPy33SCvAH8AQG8M9QVi756Gb422eUZc=
 github.com/xanzy/ssh-agent v0.2.1/go.mod h1:mLlQY/MoOhWBj+gOGMQkOeiEvkx+8pJSI+0Bx9h2kr4=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
