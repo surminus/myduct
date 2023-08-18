@@ -140,20 +140,9 @@ func dotfiles() {
 	r.Add(&resources.Git{Path: "~/.config/kitty/kitty-themes", URL: "https://github.com/dexpota/kitty-themes", Reference: "refs/heads/master"}, kittyCfgDir)
 	r.Add(&resources.Link{Path: "~/.config/kitty/kitty.conf", Source: "~/.dotfiles/kitty.conf"}, repo, kittyCfgDir)
 
-	// Add terminator configuration
-	termdir := r.Add(&resources.Directory{Path: "~/.config/terminator"}, repo)
-
-	if viaduct.Attribute.Platform.ID == "manjaro" {
-		r.Add(&resources.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.manjaro"}, repo, termdir)
-	}
-
-	if viaduct.IsUbuntu() {
-		if viaduct.Attribute.Hostname == "laura-hub" {
-			r.Add(&resources.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.desktop"}, repo, termdir)
-		} else {
-			r.Add(&resources.Link{Path: "~/.config/terminator/config", Source: "~/.dotfiles/terminator.laptop"}, repo, termdir)
-		}
-	}
+	// Remove terminator
+	r.Add(&resources.Directory{Path: "~/.config/terminator", Delete: true})
+	r.Add(&resources.Package{Names: []string{"terminator"}, Uninstall: true})
 
 	// Ensure CoC is set up correctly
 	vim := r.Add(&resources.Directory{Path: "~/.vim"})
