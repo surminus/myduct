@@ -18,7 +18,6 @@ var dotFiles = []string{
 	"colordiffrc",
 	"gemrc",
 	"gitconfig",
-	"gitignore_global",
 	"ripgreprc",
 	"terraformrc",
 	"tmux.conf",
