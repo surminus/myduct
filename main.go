@@ -151,36 +151,32 @@ func dotfiles() {
 func tools() {
 	r.Add(&resources.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git", Reference: "refs/heads/master"})
 
-	if viaduct.IsUbuntu() {
-		vim := r.Add(&resources.Apt{
-			Name:         "vim",
-			URI:          "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
-			Distribution: ubuntuDistribution(),
-			SigningKey:   "8CF63AD3F06FC659",
-			Update:       true,
-		})
+	vim := r.Add(&resources.Apt{
+		Name:         "vim",
+		URI:          "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
+		Distribution: ubuntuDistribution(),
+		SigningKey:   "8CF63AD3F06FC659",
+		Update:       true,
+	})
 
-		git := r.Add(&resources.Apt{
-			Name:       "git",
-			URI:        "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
-			SigningKey: "A1715D88E1DF1F24",
-			Update:     true,
-		})
+	git := r.Add(&resources.Apt{
+		Name:       "git",
+		URI:        "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
+		SigningKey: "A1715D88E1DF1F24",
+		Update:     true,
+	})
 
-		r.Add(resources.Pkgs(ubuntuPackages...), vim, git)
-	}
+	r.Add(resources.Pkgs(ubuntuPackages...), vim, git)
 
-	if viaduct.IsUbuntu() {
-		// Install delta
-		if viaduct.CommandOutput("dpkg -l | awk '/git-delta/ {print $3}'") != deltaVersion {
-			deltaSource := fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", deltaVersion, deltaVersion)
-			deltaPkg := viaduct.TmpFile("delta.deb")
+	// Install delta
+	if viaduct.CommandOutput("dpkg -l | awk '/git-delta/ {print $3}'") != deltaVersion {
+		deltaSource := fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", deltaVersion, deltaVersion)
+		deltaPkg := viaduct.TmpFile("delta.deb")
 
-			delta := r.Add(resources.Wget(deltaSource, viaduct.TmpFile("delta.deb")))
-			r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+deltaPkg), delta))
-		} else {
-			viaduct.Log("Delta up to date")
-		}
+		delta := r.Add(resources.Wget(deltaSource, viaduct.TmpFile("delta.deb")))
+		r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+deltaPkg), delta))
+	} else {
+		viaduct.Log("Delta up to date")
 	}
 
 	toolkit := r.Add(&resources.Git{Path: "~/surminus/toolkit", URL: "git@github.com:surminus/toolkit", Reference: "refs/heads/master"})
@@ -202,18 +198,16 @@ func tmux() {
 }
 
 func slack() {
-	if viaduct.IsUbuntu() {
-		currentVersion := viaduct.CommandOutput("dpkg -l | awk '/slack-desktop/ {print $3}'")
-		if currentVersion != slackVersion {
-			viaduct.Log(currentVersion)
-			slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
-			slackPkg := viaduct.TmpFile("slack.deb")
+	currentVersion := viaduct.CommandOutput("dpkg -l | awk '/slack-desktop/ {print $3}'")
+	if currentVersion != slackVersion {
+		viaduct.Log(currentVersion)
+		slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
+		slackPkg := viaduct.TmpFile("slack.deb")
 
-			slack := r.Add(resources.Wget(slackSource, slackPkg))
-			r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+slackPkg), slack))
-		} else {
-			viaduct.Log("Slack up to date")
-		}
+		slack := r.Add(resources.Wget(slackSource, slackPkg))
+		r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+slackPkg), slack))
+	} else {
+		viaduct.Log("Slack up to date")
 	}
 }
 
@@ -242,39 +236,35 @@ func asdf() {
 }
 
 func docker() {
-	if viaduct.IsUbuntu() {
-		apt := r.Add(&resources.Apt{
-			Name:          "docker",
-			URI:           "https://download.docker.com/linux/ubuntu",
-			Parameters:    map[string]string{"arch": viaduct.Attribute.Arch},
-			Source:        "stable",
-			Distribution:  ubuntuDistribution(),
-			SigningKeyURL: "https://download.docker.com/linux/ubuntu/gpg",
-		})
+	apt := r.Add(&resources.Apt{
+		Name:          "docker",
+		URI:           "https://download.docker.com/linux/ubuntu",
+		Parameters:    map[string]string{"arch": viaduct.Attribute.Arch},
+		Source:        "stable",
+		Distribution:  ubuntuDistribution(),
+		SigningKeyURL: "https://download.docker.com/linux/ubuntu/gpg",
+	})
 
-		install := r.Add(resources.Pkg("docker-ce"), r.Add(resources.AptUpdate(), apt))
+	install := r.Add(resources.Pkg("docker-ce"), r.Add(resources.AptUpdate(), apt))
 
-		// We need to add a User resource here to manage users, so we can
-		// add the docker group to the user
-		r.Add(&resources.Execute{
-			Command: fmt.Sprintf("usermod -G docker %s", viaduct.Attribute.User.Username),
-			Unless:  fmt.Sprintf("grep %s /etc/group | grep -q docker", viaduct.Attribute.User.Username),
-		}, install)
-	}
+	// We need to add a User resource here to manage users, so we can
+	// add the docker group to the user
+	r.Add(&resources.Execute{
+		Command: fmt.Sprintf("usermod -G docker %s", viaduct.Attribute.User.Username),
+		Unless:  fmt.Sprintf("grep %s /etc/group | grep -q docker", viaduct.Attribute.User.Username),
+	}, install)
 }
 
 func nodejs() {
-	if viaduct.IsUbuntu() {
-		r.Add(&resources.Apt{
-			Name:          "node",
-			URI:           "https://deb.nodesource.com/node_18.x",
-			SigningKeyURL: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key",
-			Distribution:  ubuntuDistribution(),
-			Update:        true,
-		})
+	r.Add(&resources.Apt{
+		Name:          "node",
+		URI:           "https://deb.nodesource.com/node_18.x",
+		SigningKeyURL: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key",
+		Distribution:  ubuntuDistribution(),
+		Update:        true,
+	})
 
-		r.Add(resources.Pkg("nodejs"))
-	}
+	r.Add(resources.Pkg("nodejs"))
 }
 
 func user() {
