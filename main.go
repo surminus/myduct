@@ -31,6 +31,7 @@ var ubuntuPackages = []string{
 	"apt-transport-https",
 	"awscli",
 	"bat",
+	"blueman",
 	"ca-certificates",
 	"chromium-browser",
 	"colordiff",
