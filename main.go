@@ -199,6 +199,13 @@ func tmux() {
 }
 
 func slack() {
+	// Use snap to install Slack on Ubuntu, I got bored of using apt to keep
+	// it up to date
+	if viaduct.Attribute.Platform.ID == "ubuntu" {
+		r.Add(resources.ExecUnless("snap install slack", "snap list | grep -q slack"))
+		return
+	}
+
 	currentVersion := viaduct.CommandOutput("dpkg -l | awk '/slack-desktop/ {print $3}'")
 	if currentVersion != slackVersion {
 		viaduct.Log(currentVersion)
