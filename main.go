@@ -200,6 +200,11 @@ func tmux() {
 }
 
 func slack() {
+	// Don't bother installing on WSL
+	if viaduct.Attribute.Hostname == "win-hub" {
+		return
+	}
+
 	// Use snap to install Slack on Ubuntu, I got bored of using apt to keep
 	// it up to date
 	if viaduct.Attribute.Platform.ID == "ubuntu" {
