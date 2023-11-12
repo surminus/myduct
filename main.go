@@ -67,6 +67,7 @@ var ubuntuPackages = []string{
 	"virtualbox",
 	"xclip",
 	"xkcdpass",
+	"zlib1g-dev",
 }
 
 var r = viaduct.New()
