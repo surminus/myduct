@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	deltaVersion = "0.15.1"
+	deltaVersion = "0.17.0"
 	slackVersion = "4.33.84"
 )
 
