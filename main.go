@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	deltaVersion = "0.17.0"
-	slackVersion = "4.33.84"
+	deltaVersion  = "0.17.0"
+	slackVersion  = "4.33.84"
+	zoxideVersion = "0.9.4"
 )
 
 var dotFiles = []string{
@@ -181,8 +182,19 @@ func tools() {
 		viaduct.Log("Delta up to date")
 	}
 
-	toolkit := r.Add(&resources.Git{Path: "~/surminus/toolkit", URL: "git@github.com:surminus/toolkit", Reference: "refs/heads/master"})
-	for _, file := range []string{"awsexport", "discord-updater"} {
+	// Install zoxide
+	if viaduct.CommandOutput("dpkg -l | awk '/zoxide/ {print $3}'") != zoxideVersion {
+		zoxideSource := fmt.Sprintf("https://github.com/ajeetdsouza/zoxide/releases/download/v%s/zoxide_%s-1_amd64.deb", zoxideVersion, zoxideVersion)
+		zoxidePkg := viaduct.TmpFile("zoxide.deb")
+
+		zoxide := r.Add(resources.Wget(zoxideSource, viaduct.TmpFile("zoxide.deb")))
+		r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+zoxidePkg), zoxide))
+	} else {
+		viaduct.Log("zoxide up to date")
+	}
+
+	toolkit := r.Add(&resources.Git{Path: "~/surminus/toolkit", URL: "git@github.com:surminus/toolkit", Reference: "refs/heads/main"})
+	for _, file := range []string{"awsexport", "discord-updater", "goinstall"} {
 		r.Add(&resources.Link{
 			Path:   "~/bin/" + file,
 			Source: filepath.Join("~/surminus/toolkit", file),
