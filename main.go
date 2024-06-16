@@ -154,22 +154,27 @@ func dotfiles() {
 func tools() {
 	r.Add(&resources.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git", Reference: "refs/heads/master"})
 
-	vim := r.Add(&resources.Apt{
-		Name:         "vim",
-		URI:          "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
-		Distribution: ubuntuDistribution(),
-		SigningKey:   "8CF63AD3F06FC659",
-		Update:       true,
-	})
+	var deps []*viaduct.Resource
 
-	git := r.Add(&resources.Apt{
-		Name:       "git",
-		URI:        "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
-		SigningKey: "A1715D88E1DF1F24",
-		Update:     true,
-	})
+	// The PPAs for the latest version have not been built yet
+	if viaduct.Attribute.Platform.VersionID != "24.04" {
+		deps = append(deps, r.Add(&resources.Apt{
+			Name:         "vim",
+			URI:          "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
+			Distribution: ubuntuDistribution(),
+			SigningKey:   "8CF63AD3F06FC659",
+			Update:       true,
+		}))
 
-	r.Add(resources.Pkgs(ubuntuPackages...), vim, git)
+		deps = append(deps, r.Add(&resources.Apt{
+			Name:       "git",
+			URI:        "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
+			SigningKey: "A1715D88E1DF1F24",
+			Update:     true,
+		}))
+	}
+
+	r.Add(resources.Pkgs(ubuntuPackages...), deps...)
 
 	// Install delta
 	if viaduct.CommandOutput("dpkg -l | awk '/git-delta/ {print $3}'") != deltaVersion {
@@ -282,13 +287,15 @@ func docker() {
 }
 
 func nodejs() {
-	r.Add(&resources.Apt{
-		Name:          "node",
-		URI:           "https://deb.nodesource.com/node_18.x",
-		SigningKeyURL: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key",
-		Distribution:  ubuntuDistribution(),
-		Update:        true,
-	})
+	if viaduct.Attribute.Platform.VersionID != "24.04" {
+		r.Add(&resources.Apt{
+			Name:          "node",
+			URI:           "https://deb.nodesource.com/node_18.x",
+			SigningKeyURL: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key",
+			Distribution:  ubuntuDistribution(),
+			Update:        true,
+		})
+	}
 
 	r.Add(resources.Pkg("nodejs"))
 }
