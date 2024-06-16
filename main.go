@@ -58,6 +58,7 @@ var ubuntuPackages = []string{
 	"pwgen",
 	"resolvconf",
 	"ripgrep",
+	"sd",
 	"shellcheck",
 	"software-properties-common",
 	"tldr",
