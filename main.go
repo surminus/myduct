@@ -30,7 +30,6 @@ var dotFiles = []string{
 
 var ubuntuPackages = []string{
 	"apt-transport-https",
-	"awscli",
 	"bat",
 	"blueman",
 	"ca-certificates",
@@ -63,8 +62,8 @@ var ubuntuPackages = []string{
 	"software-properties-common",
 	"tldr",
 	"tmux",
-	"vagrant",
 	"vim",
+	"vim-gui-common",
 	"vim-nox",
 	"virtualbox",
 	"xclip",
@@ -103,6 +102,7 @@ func zsh() {
 	r.Add(resources.Pkg("zsh"))
 	zsh := r.Add(&resources.Git{Path: "~/.oh-my-zsh", URL: "https://github.com/ohmyzsh/ohmyzsh.git", Reference: "refs/heads/master"})
 	r.Add(&resources.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions", URL: "https://github.com/zsh-users/zsh-autosuggestions", Reference: "refs/heads/master"}, zsh)
+	r.Add(&resources.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-completions", URL: "https://github.com/zsh-users/zsh-completions", Reference: "refs/heads/master"}, zsh)
 }
 
 func vim() {
@@ -142,10 +142,6 @@ func dotfiles() {
 	kittyCfgDir := r.Add(resources.Dir("~/.config/kitty"))
 	r.Add(&resources.Git{Path: "~/.config/kitty/kitty-themes", URL: "https://github.com/dexpota/kitty-themes", Reference: "refs/heads/master"}, kittyCfgDir)
 	r.Add(&resources.Link{Path: "~/.config/kitty/kitty.conf", Source: "~/.dotfiles/kitty.conf"}, repo, kittyCfgDir)
-
-	// Remove terminator
-	r.Add(&resources.Directory{Path: "~/.config/terminator", Delete: true})
-	r.Add(&resources.Package{Names: []string{"terminator"}, Uninstall: true})
 
 	// Ensure CoC is set up correctly
 	vim := r.Add(&resources.Directory{Path: "~/.vim"})
@@ -282,7 +278,7 @@ func docker() {
 	// We need to add a User resource here to manage users, so we can
 	// add the docker group to the user
 	r.Add(&resources.Execute{
-		Command: fmt.Sprintf("usermod -G docker %s", viaduct.Attribute.User.Username),
+		Command: fmt.Sprintf("usermod -aG docker %s", viaduct.Attribute.User.Username),
 		Unless:  fmt.Sprintf("grep %s /etc/group | grep -q docker", viaduct.Attribute.User.Username),
 	}, install)
 }
