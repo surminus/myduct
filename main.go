@@ -52,6 +52,7 @@ var ubuntuPackages = []string{
 	"libssl-dev",
 	"libterm-readkey-perl",
 	"ncdu",
+	"neovim",
 	"network-manager-openvpn-gnome",
 	"openvpn",
 	"pass",
@@ -136,16 +137,14 @@ func dotfiles() {
 		}, repo)
 	}
 
+	r.Add(&resources.Link{Path: "~/.config/nvim", Source: "~/.dotfiles/nvim"}, repo)
+
 	r.Add(&resources.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, repo)
 
 	// Install kitty config
 	kittyCfgDir := r.Add(resources.Dir("~/.config/kitty"))
 	r.Add(&resources.Git{Path: "~/.config/kitty/kitty-themes", URL: "https://github.com/dexpota/kitty-themes", Reference: "refs/heads/master"}, kittyCfgDir)
 	r.Add(&resources.Link{Path: "~/.config/kitty/kitty.conf", Source: "~/.dotfiles/kitty.conf"}, repo, kittyCfgDir)
-
-	// Remove terminator
-	r.Add(&resources.Directory{Path: "~/.config/terminator", Delete: true})
-	r.Add(&resources.Package{Names: []string{"terminator"}, Uninstall: true})
 
 	// Ensure CoC is set up correctly
 	vim := r.Add(&resources.Directory{Path: "~/.vim"})
