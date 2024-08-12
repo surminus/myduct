@@ -1,13 +1,18 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"path/filepath"
+	"strings"
 
 	"github.com/surminus/viaduct"
 	"github.com/surminus/viaduct/resources"
 )
+
+//go:embed files
+var files embed.FS
 
 const (
 	deltaVersion  = "0.17.0"
@@ -33,7 +38,6 @@ var ubuntuPackages = []string{
 	"bat",
 	"blueman",
 	"ca-certificates",
-	"chromium-browser",
 	"colordiff",
 	"curl",
 	"exuberant-ctags",
@@ -95,6 +99,7 @@ func main() {
 	nodejs()
 	user()
 	fonts()
+	deleteSnap()
 
 	r.Run()
 }
@@ -188,7 +193,8 @@ func tools() {
 	}
 
 	// Install zoxide
-	if viaduct.CommandOutput("dpkg -l | awk '/zoxide/ {print $3}'") != zoxideVersion {
+	currentZoxideVersion := viaduct.CommandOutput("dpkg -l | awk '/zoxide/ {print $3}'")
+	if !strings.HasPrefix(currentZoxideVersion, zoxideVersion) {
 		zoxideSource := fmt.Sprintf("https://github.com/ajeetdsouza/zoxide/releases/download/v%s/zoxide_%s-1_amd64.deb", zoxideVersion, zoxideVersion)
 		zoxidePkg := viaduct.TmpFile("zoxide.deb")
 
@@ -219,13 +225,6 @@ func tmux() {
 func slack() {
 	// Don't bother installing on WSL
 	if viaduct.Attribute.Hostname == "win-hub" {
-		return
-	}
-
-	// Use snap to install Slack on Ubuntu, I got bored of using apt to keep
-	// it up to date
-	if viaduct.Attribute.Platform.ID == "ubuntu" {
-		r.Add(resources.ExecUnless("snap install slack", "snap list | grep -q slack"))
 		return
 	}
 
@@ -333,4 +332,11 @@ func ubuntuDistribution() string {
 	}
 
 	return distribution
+}
+
+// Snap is a fucking pain in the ass
+func deleteSnap() {
+	deleteSnap := r.Add(&resources.Package{Names: []string{"snapd"}, Uninstall: true})
+	holdSnap := r.Add(&resources.Execute{Command: "apt-mark hold snapd", Unless: "apt-mark showhold | grep -q snapd"}, deleteSnap)
+	r.Add(resources.CreateFile("/etc/apt/preferences.d/nosnap.pref", resources.EmbeddedFile(files, "files/nosnap.pref")), deleteSnap, holdSnap)
 }
