@@ -24,7 +24,6 @@ var dotFiles = []string{
 	"gemrc",
 	"gitconfig",
 	"ripgreprc",
-	"terraformrc",
 	"tool-versions",
 	"zshrc",
 }
