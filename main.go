@@ -127,7 +127,7 @@ func dotfiles() {
 	r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo, kittyCfgDir)
 
 	// Configure fonts
-	r.Add(resources.CreateLink("~/.dotfiles/fonts", "~/.local/share/fonts"), repo)
+	r.Add(resources.CreateLink("~/.local/share/fonts", "~/.dotfiles/fonts"), repo)
 }
 
 func tools() {
