@@ -21,15 +21,11 @@ const (
 )
 
 var dotFiles = []string{
-	"colordiffrc",
 	"gemrc",
 	"gitconfig",
 	"ripgreprc",
 	"terraformrc",
-	"tmux.conf",
 	"tool-versions",
-	"vale.ini",
-	"vimrc",
 	"zshrc",
 }
 
@@ -89,10 +85,8 @@ func main() {
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "tmp")})
 
 	zsh()
-	vim()
 	dotfiles()
 	tools()
-	tmux()
 	asdf()
 	docker()
 	slack()
@@ -110,29 +104,11 @@ func zsh() {
 	r.Add(&resources.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-completions", URL: "https://github.com/zsh-users/zsh-completions", Reference: "refs/heads/master"}, zsh)
 }
 
-func vim() {
-	r.Add(resources.Dir("~/.vim/swapfiles"))
-}
-
 func dotfiles() {
 	repo := r.Add(resources.Repo(
 		"~/.dotfiles",
 		"git@github.com:surminus/dotfiles.git",
 	))
-
-	stylespath := "~/.vale/styles"
-	valedir := r.Add(resources.Dir(stylespath))
-	valeStyles := []string{
-		"alex",
-	}
-
-	for _, style := range valeStyles {
-		r.Add(&resources.Git{
-			Path:      fmt.Sprintf("%s/%s", stylespath, style),
-			URL:       fmt.Sprintf("git@github.com:errata-ai/%s", style),
-			Reference: "refs/heads/master",
-		}, valedir)
-	}
 
 	for _, file := range dotFiles {
 		r.Add(&resources.Link{
@@ -141,18 +117,14 @@ func dotfiles() {
 		}, repo)
 	}
 
+	// Neovim configuration
 	r.Add(&resources.Link{Path: "~/.config/nvim", Source: "~/.dotfiles/nvim"}, repo)
 
 	r.Add(&resources.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, repo)
 
 	// Install kitty config
 	kittyCfgDir := r.Add(resources.Dir("~/.config/kitty"))
-	r.Add(&resources.Git{Path: "~/.config/kitty/kitty-themes", URL: "https://github.com/dexpota/kitty-themes", Reference: "refs/heads/master"}, kittyCfgDir)
-	r.Add(&resources.Link{Path: "~/.config/kitty/kitty.conf", Source: "~/.dotfiles/kitty.conf"}, repo, kittyCfgDir)
-
-	// Ensure CoC is set up correctly
-	vim := r.Add(&resources.Directory{Path: "~/.vim"})
-	r.Add(&resources.Link{Path: "~/.vim/coc-settings.json", Source: "~/.dotfiles/coc-settings.json"}, repo, vim)
+	r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo, kittyCfgDir)
 
 	// Configure fonts
 	r.Add(resources.CreateLink("~/.dotfiles/fonts", "~/.local/share/fonts"), repo)
@@ -213,15 +185,6 @@ func tools() {
 			Source: filepath.Join("~/surminus/toolkit", file),
 		}, toolkit)
 	}
-}
-
-func tmux() {
-	r.Add(&resources.Git{
-		Path:      "~/.tmux/plugins/tpm",
-		URL:       "https://github.com/tmux-plugins/tpm",
-		Reference: "refs/heads/master",
-		Ensure:    true,
-	})
 }
 
 func slack() {
