@@ -14,11 +14,12 @@ import (
 //go:embed files
 var files embed.FS
 
-const (
-	deltaVersion  = "0.17.0"
-	slackVersion  = "4.33.84"
-	zoxideVersion = "0.9.4"
-)
+var packageVersions = map[string]string{
+	"delta":      "0.17.0",
+	"slack":      "4.33.84",
+	"tidal-hifi": "5.16.0",
+	"zoxide":     "0.9.4",
+}
 
 var dotFiles = []string{
 	"gemrc",
@@ -49,6 +50,7 @@ var ubuntuPackages = []string{
 	"libffi-dev",
 	"libssl-dev",
 	"libterm-readkey-perl",
+	"libyaml-dev",
 	"ncdu",
 	"neovim",
 	"network-manager-openvpn-gnome",
@@ -93,6 +95,7 @@ func main() {
 	user()
 	librewolf()
 	deleteSnap()
+	tidal()
 
 	r.Run()
 }
@@ -160,27 +163,12 @@ func tools() {
 	r.Add(resources.Pkgs(ubuntuPackages...), deps...)
 
 	// Install delta
-	if viaduct.CommandOutput("dpkg -l | awk '/git-delta/ {print $3}'") != deltaVersion {
-		deltaSource := fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", deltaVersion, deltaVersion)
-		deltaPkg := viaduct.TmpFile("delta.deb")
-
-		delta := r.Add(resources.Wget(deltaSource, viaduct.TmpFile("delta.deb")))
-		r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+deltaPkg), delta))
-	} else {
-		viaduct.Log("Delta up to date")
-	}
+	v := packageVersions["delta"]
+	installDebPkg("git-delta", v, fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", v, v))
 
 	// Install zoxide
-	currentZoxideVersion := viaduct.CommandOutput("dpkg -l | awk '/zoxide/ {print $3}'")
-	if !strings.HasPrefix(currentZoxideVersion, zoxideVersion) {
-		zoxideSource := fmt.Sprintf("https://github.com/ajeetdsouza/zoxide/releases/download/v%s/zoxide_%s-1_amd64.deb", zoxideVersion, zoxideVersion)
-		zoxidePkg := viaduct.TmpFile("zoxide.deb")
-
-		zoxide := r.Add(resources.Wget(zoxideSource, viaduct.TmpFile("zoxide.deb")))
-		r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+zoxidePkg), zoxide))
-	} else {
-		viaduct.Log("zoxide up to date")
-	}
+	v = packageVersions["zoxide"]
+	installDebPkg("zoxide", v, fmt.Sprintf("https://github.com/ajeetdsouza/zoxide/releases/download/v%s/zoxide_%s-1_amd64.deb", v, v))
 
 	toolkit := r.Add(&resources.Git{Path: "~/surminus/toolkit", URL: "git@github.com:surminus/toolkit", Reference: "refs/heads/main"})
 	for _, file := range []string{"awsexport", "discord-updater", "goinstall"} {
@@ -197,17 +185,8 @@ func slack() {
 		return
 	}
 
-	currentVersion := viaduct.CommandOutput("dpkg -l | awk '/slack-desktop/ {print $3}'")
-	if currentVersion != slackVersion {
-		viaduct.Log(currentVersion)
-		slackSource := fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", slackVersion, slackVersion)
-		slackPkg := viaduct.TmpFile("slack.deb")
-
-		slack := r.Add(resources.Wget(slackSource, slackPkg))
-		r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+slackPkg), slack))
-	} else {
-		viaduct.Log("Slack up to date")
-	}
+	v := packageVersions["slack"]
+	installDebPkg("slack", v, fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", v, v))
 }
 
 func asdf() {
@@ -311,4 +290,22 @@ func librewolf() {
 	})
 
 	r.Add(resources.Pkg("librewolf"), dep)
+}
+
+func tidal() {
+	v := packageVersions["tidal-hifi"]
+	installDebPkg("tidal-hifi", v, fmt.Sprintf("https://github.com/Mastermindzh/tidal-hifi/releases/download/%s/tidal-hifi_%s_amd64.deb", v, v))
+}
+
+func installDebPkg(name, version, source string) {
+	currentVersion := viaduct.CommandOutput(fmt.Sprintf("dpkg -l | awk '/%s/ {print $3}'", name))
+
+	if !strings.HasPrefix(currentVersion, version) {
+		viaduct.Log(name, " =>", currentVersion)
+		pkg := viaduct.TmpFile(fmt.Sprintf("%s.deb", name))
+		deb := r.Add(resources.Wget(source, pkg))
+		r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+pkg), deb))
+	} else {
+		viaduct.Log(name, " up to date")
+	}
 }
