@@ -91,6 +91,7 @@ func main() {
 	slack()
 	nodejs()
 	user()
+	librewolf()
 	deleteSnap()
 
 	r.Run()
@@ -119,7 +120,11 @@ func dotfiles() {
 	// Neovim configuration
 	r.Add(&resources.Link{Path: "~/.config/nvim", Source: "~/.dotfiles/nvim"}, repo)
 
+	// zsh-theme
 	r.Add(&resources.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, repo)
+
+	// librewolf
+	r.Add(resources.CreateLink("~/.config/librewolf/librewolf.overrides.cfg", "~/.dotfiles/librewolf.overrides.cfg"), repo, r.Add(resources.Dir("~/.config/librewolf")))
 
 	// Install kitty config
 	kittyCfgDir := r.Add(resources.Dir("~/.config/kitty"))
@@ -284,4 +289,26 @@ func deleteSnap() {
 	deleteSnap := r.Add(&resources.Package{Names: []string{"snapd"}, Uninstall: true})
 	holdSnap := r.Add(&resources.Execute{Command: "apt-mark hold snapd", Unless: "apt-mark showhold | grep -q snapd"}, deleteSnap)
 	r.Add(resources.CreateFile("/etc/apt/preferences.d/nosnap.pref", resources.EmbeddedFile(files, "files/nosnap.pref")), deleteSnap, holdSnap)
+}
+
+func librewolf() {
+	// https://librewolf.net/installation/debian/
+	distro := func() string {
+		if viaduct.Attribute.Platform.UbuntuCodename == "noble" || viaduct.Attribute.Platform.UbuntuCodename == "jammy" {
+			return "jammy"
+		}
+
+		return "focal"
+	}
+
+	dep := r.Add(&resources.Apt{
+		Distribution:  distro(),
+		Name:          "librewolf",
+		Parameters:    map[string]string{"arch": "amd64"},
+		SigningKeyURL: "https://deb.librewolf.net/keyring.gpg",
+		URI:           "https://deb.librewolf.net",
+		Update:        true,
+	})
+
+	r.Add(resources.Pkg("librewolf"), dep)
 }
