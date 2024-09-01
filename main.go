@@ -48,6 +48,7 @@ var ubuntuPackages = []string{
 	"kitty",
 	"libbz2-dev",
 	"libffi-dev",
+	"libsqlite3-dev",
 	"libssl-dev",
 	"libterm-readkey-perl",
 	"libyaml-dev",
@@ -198,16 +199,33 @@ func asdf() {
 
 	dir := r.Add(&resources.Directory{Path: "~/.asdf/plugins"}, repo)
 
+	// refs/heads/master
 	for plugin, url := range map[string]string{
-		"golang": "https://github.com/kennyp/asdf-golang",
-		"nodejs": "https://github.com/asdf-vm/asdf-nodejs",
-		"python": "https://github.com/danhper/asdf-python",
-		"ruby":   "https://github.com/asdf-vm/asdf-ruby",
+		"golang": "kennyp/asdf-golang",
+		"goss": "raimon49/asdf-goss",
+		"jq": "azmcode/asdf-jq",
+		"nodejs": "asdf-vm/asdf-nodejs",
+		"python": "danhper/asdf-python",
+		"ruby":   "asdf-vm/asdf-ruby",
+		"rust": "asdf-community/asdf-rust",
 	} {
 		r.Add(&resources.Git{
 			Path:      fmt.Sprintf("~/.asdf/plugins/%s", plugin),
-			URL:       url,
+			URL:       fmt.Sprintf("https://github.com/%s", url),
 			Reference: "refs/heads/master",
+			Ensure:    true,
+		}, dir)
+	}
+
+	// refs/heads/main
+	for plugin, url := range map[string]string{
+		"awscli": "MetricMike/asdf-awscli",
+		"opentofu": "virtualroot/asdf-opentofu",
+	} {
+		r.Add(&resources.Git{
+			Path:      fmt.Sprintf("~/.asdf/plugins/%s", plugin),
+			URL:       fmt.Sprintf("https://github.com/%s", url),
+			Reference: "refs/heads/main",
 			Ensure:    true,
 		}, dir)
 	}
