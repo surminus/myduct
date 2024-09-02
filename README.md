@@ -11,7 +11,7 @@ itself.
 ### Install Git
 
 ```
-sudo apt install git curl -y
+sudo apt install git curl xclip -y
 ```
 
 ### Generate and add SSH key to GitHub
@@ -41,22 +41,20 @@ Log out and log back in
 
 ### Install and run
 
-Allows running without Go already installed.
+Download a binary from GitHub releases.
 
-Set latest version, example:
+Configure known hosts:
 ```
-export MYDUCT_VERSION=v11
-```
-
-Install the binary:
-
-```
-cd /tmp
-wget https://github.com/surminus/myduct/releases/download/${MYDUCT_VERSION}/myduct_${MYDUCT_VERSION}_$(uname -s)_$(uname -p).tar.gz
-tar zxvf myduct_${MYDUCT_VERSION}_$(uname -s)_$(uname -p).tar.gz
+sudo mkdir -p /root/.ssh && sudo chmod 0600 /root/.ssh
+ssh-keyscan github.com | tee ~/.ssh/known_hosts | sudo tee /root/.ssh/known_hosts
 ```
 
-Run it:
+Add identity:
 ```
-sudo /tmp/myduct
+ssh-add -k
+```
+
+Configure system:
+```
+sudo ./myduct
 ```
