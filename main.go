@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -137,6 +138,9 @@ func dotfiles() {
 
 	// Configure fonts
 	r.Add(resources.CreateLink("~/.local/share/fonts", "~/.dotfiles/fonts"), repo)
+	if isKDE() {
+		r.Add(resources.CreateFile("/etc/fonts/conf.avail/56-kubuntu-noto.conf", resources.EmbeddedFile(files, "files/56-kubuntu-noto.conf")))
+	}
 }
 
 func tools() {
@@ -327,4 +331,8 @@ func installDebPkg(name, version, source string) {
 	} else {
 		viaduct.Log(name, " up to date")
 	}
+}
+
+func isKDE() bool {
+	return os.Getenv("XDG_CURRENT_DESKTOP") == "KDE"
 }
