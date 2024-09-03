@@ -17,7 +17,7 @@ var files embed.FS
 
 var packageVersions = map[string]string{
 	"delta":      "0.17.0",
-	"slack":      "4.33.84",
+	"slack":      "4.39.95",
 	"tidal-hifi": "5.16.0",
 	"zoxide":     "0.9.4",
 }
@@ -192,7 +192,7 @@ func slack() {
 	}
 
 	v := packageVersions["slack"]
-	installDebPkg("slack", v, fmt.Sprintf("https://downloads.slack-edge.com/releases/linux/%s/prod/x64/slack-desktop-%s-amd64.deb", v, v))
+	installDebPkg("slack", v, fmt.Sprintf("https://downloads.slack-edge.com/desktop-releases/linux/x64/%s/slack-desktop-%s-amd64.deb", v, v))
 }
 
 func asdf() {
@@ -207,12 +207,12 @@ func asdf() {
 	// refs/heads/master
 	for plugin, url := range map[string]string{
 		"golang": "kennyp/asdf-golang",
-		"goss": "raimon49/asdf-goss",
-		"jq": "azmcode/asdf-jq",
+		"goss":   "raimon49/asdf-goss",
+		"jq":     "azmcode/asdf-jq",
 		"nodejs": "asdf-vm/asdf-nodejs",
 		"python": "danhper/asdf-python",
 		"ruby":   "asdf-vm/asdf-ruby",
-		"rust": "asdf-community/asdf-rust",
+		"rust":   "asdf-community/asdf-rust",
 	} {
 		r.Add(&resources.Git{
 			Path:      fmt.Sprintf("~/.asdf/plugins/%s", plugin),
@@ -224,7 +224,7 @@ func asdf() {
 
 	// refs/heads/main
 	for plugin, url := range map[string]string{
-		"awscli": "MetricMike/asdf-awscli",
+		"awscli":   "MetricMike/asdf-awscli",
 		"opentofu": "virtualroot/asdf-opentofu",
 	} {
 		r.Add(&resources.Git{
