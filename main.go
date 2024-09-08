@@ -30,7 +30,7 @@ var dotFiles = []string{
 	"zshrc",
 }
 
-var ubuntuPackages = []string{
+var packages = []string{
 	"apt-transport-https",
 	"bat",
 	"blueman",
@@ -75,6 +75,12 @@ var ubuntuPackages = []string{
 	"zlib1g-dev",
 }
 
+// packages only installed for home installs
+var homePackages = []string{
+	// Allows configuring the install for use with music production software
+	"ubuntustudio-installer",
+}
+
 var r = viaduct.New()
 
 func main() {
@@ -83,6 +89,10 @@ func main() {
 	}
 
 	viaduct.Attribute.SetUser("laura")
+
+	if isHomeInstall() {
+		viaduct.Log("Detected home install!")
+	}
 
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "bin")})
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "tmp")})
@@ -148,25 +158,19 @@ func tools() {
 
 	var deps []*viaduct.Resource
 
-	// The PPAs for the latest version have not been built yet
-	if viaduct.Attribute.Platform.VersionID != "24.04" {
-		deps = append(deps, r.Add(&resources.Apt{
-			Name:         "vim",
-			URI:          "https://ppa.launchpadcontent.net/jonathonf/vim/ubuntu",
-			Distribution: ubuntuDistribution(),
-			SigningKey:   "8CF63AD3F06FC659",
-			Update:       true,
-		}))
+	deps = append(deps, r.Add(&resources.Apt{
+		Name:       "git",
+		URI:        "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
+		SigningKey: "A1715D88E1DF1F24",
+		Update:     true,
+	}))
 
-		deps = append(deps, r.Add(&resources.Apt{
-			Name:       "git",
-			URI:        "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
-			SigningKey: "A1715D88E1DF1F24",
-			Update:     true,
-		}))
+	pkgs := packages
+	if isHomeInstall() {
+		pkgs = append(pkgs, homePackages...)
 	}
 
-	r.Add(resources.Pkgs(ubuntuPackages...), deps...)
+	r.Add(resources.Pkgs(pkgs...), deps...)
 
 	// Install delta
 	v := packageVersions["delta"]
@@ -335,4 +339,10 @@ func installDebPkg(name, version, source string) {
 
 func isKDE() bool {
 	return os.Getenv("XDG_CURRENT_DESKTOP") == "KDE"
+}
+
+// For a home install, simply touch ~/.myducthome to install additional
+// packages
+func isHomeInstall() bool {
+	return viaduct.FileExists(viaduct.ExpandPath("~/.myducthome"))
 }

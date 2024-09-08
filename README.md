@@ -54,6 +54,11 @@ Add identity:
 ssh-add -k
 ```
 
+Configure for home install (optional):
+```
+touch ~/.myducthome
+```
+
 Configure system:
 ```
 sudo ./myduct
