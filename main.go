@@ -109,6 +109,7 @@ func main() {
 	librewolf()
 	deleteSnap()
 	tidal()
+	github()
 
 	r.Run()
 }
@@ -346,4 +347,17 @@ func isKDE() bool {
 // packages
 func isHomeInstall() bool {
 	return viaduct.FileExists(viaduct.ExpandPath("~/.myducthome"))
+}
+
+func github() {
+	r.Add(resources.Pkg("gh"),
+		r.Add(&resources.Apt{
+			Distribution:  "stable",
+			Name:          "github",
+			Parameters:    map[string]string{"arch": "amd64"},
+			SigningKeyURL: "https://cli.github.com/packages/githubcli-archive-keyring.gpg",
+			URI:           "https://cli.github.com/packages",
+			Update:        true,
+		}),
+	)
 }
