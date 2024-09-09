@@ -23,6 +23,7 @@ var packageVersions = map[string]string{
 }
 
 var dotFiles = []string{
+	"default-golang-pkgs",
 	"gemrc",
 	"gitconfig",
 	"ripgreprc",
