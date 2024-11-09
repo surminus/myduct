@@ -106,7 +106,10 @@ func main() {
 	slack()
 	nodejs()
 	user()
-	librewolf()
+
+	// https://librewolf.net/debian-migration/
+	// librewolf()
+
 	deleteSnap()
 	tidal()
 	github()
