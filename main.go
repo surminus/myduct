@@ -55,7 +55,6 @@ var packages = []string{
 	"libterm-readkey-perl",
 	"libyaml-dev",
 	"ncdu",
-	"neovim",
 	"network-manager-openvpn-gnome",
 	"openvpn",
 	"pass",
@@ -106,13 +105,11 @@ func main() {
 	slack()
 	nodejs()
 	user()
-
-	// https://librewolf.net/debian-migration/
-	// librewolf()
-
+	librewolf()
 	deleteSnap()
 	tidal()
 	github()
+	neovim()
 
 	r.Run()
 }
@@ -303,22 +300,14 @@ func deleteSnap() {
 }
 
 func librewolf() {
-	// https://librewolf.net/installation/debian/
-	distro := func() string {
-		if viaduct.Attribute.Platform.UbuntuCodename == "noble" || viaduct.Attribute.Platform.UbuntuCodename == "jammy" {
-			return "jammy"
-		}
-
-		return "focal"
-	}
-
 	dep := r.Add(&resources.Apt{
-		Distribution:  distro(),
-		Name:          "librewolf",
-		Parameters:    map[string]string{"arch": "amd64"},
-		SigningKeyURL: "https://deb.librewolf.net/keyring.gpg",
-		URI:           "https://deb.librewolf.net",
-		Update:        true,
+		Distribution: "librewolf",
+		Name:         "librewolf",
+		Parameters:   map[string]string{"arch": "amd64"},
+		PublicPgpKey: resources.EmbeddedFile(files, "files/librewolf.asc"),
+		URI:          "https://repo.librewolf.net",
+		Update:       true,
+		Format:       resources.Sources,
 	})
 
 	r.Add(resources.Pkg("librewolf"), dep)
@@ -363,4 +352,17 @@ func github() {
 			Update:        true,
 		}),
 	)
+}
+
+func neovim() {
+	dep := r.Add(&resources.Apt{
+		Distribution: viaduct.Attribute.Platform.UbuntuCodename,
+		Name:         "neovim",
+		PublicPgpKey: resources.EmbeddedFile(files, "files/neovim.asc"),
+		URI:          "https://ppa.launchpadcontent.net/neovim-ppa/unstable/ubuntu/",
+		Update:       true,
+		Format:       resources.Sources,
+	})
+
+	r.Add(resources.Pkg("neovim"), dep)
 }
