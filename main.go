@@ -50,6 +50,7 @@ var packages = []string{
 	"kitty",
 	"libbz2-dev",
 	"libffi-dev",
+	"libreoffice-calc",
 	"libsqlite3-dev",
 	"libssl-dev",
 	"libterm-readkey-perl",
