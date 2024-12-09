@@ -282,6 +282,16 @@ func user() {
 
 	r.Add(resources.DeleteFile("~/.face"))
 	r.Add(resources.DeleteFile("/var/lib/AccountsService/icons/laura"))
+
+	sudoersfile := []string{
+		"# Managed by myduct",
+		"# Default sudo access",
+		"laura ALL=(ALL:ALL) ALL",
+		"# Use apt without password",
+		"laura ALL=NOPASSWD: /usr/bin/apt,/var/lib/dpkg/lock-frontend",
+	}
+
+	r.Add(resources.CreateFile("/etc/sudoers.d/laura", strings.Join(sudoersfile, "\n")))
 }
 
 func ubuntuDistribution() string {
