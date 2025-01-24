@@ -70,7 +70,6 @@ var packages = []string{
 	"vim",
 	"vim-gui-common",
 	"vim-nox",
-	"virtualbox",
 	"xclip",
 	"xkcdpass",
 	"zlib1g-dev",
