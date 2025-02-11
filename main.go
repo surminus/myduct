@@ -110,6 +110,7 @@ func main() {
 	tidal()
 	github()
 	neovim()
+	mise()
 
 	r.Run()
 }
@@ -359,10 +360,23 @@ func neovim() {
 		Distribution: viaduct.Attribute.Platform.UbuntuCodename,
 		Name:         "neovim",
 		PublicPgpKey: resources.EmbeddedFile(files, "files/neovim.asc"),
-		URI:          "https://ppa.launchpadcontent.net/neovim-ppa/unstable/ubuntu/",
+		URI:          "https://ppa.launchpadcontent.net/neovim-ppa/stable/ubuntu/",
 		Update:       true,
 		Format:       resources.Sources,
 	})
 
 	r.Add(resources.Pkg("neovim"), dep)
+}
+
+func mise() {
+	dep := r.Add(&resources.Apt{
+		Distribution:  "stable",
+		Name:          "mise",
+		Parameters:    map[string]string{"arch": "amd64"},
+		SigningKeyURL: "https://mise.jdx.dev/gpg-key.pub",
+		URI:           "https://mise.jdx.dev/deb ",
+		Update:        true,
+	})
+
+	r.Add(resources.Pkg("mise"), dep)
 }
