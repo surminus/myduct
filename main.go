@@ -356,16 +356,15 @@ func github() {
 }
 
 func neovim() {
-	dep := r.Add(&resources.Apt{
-		Distribution: viaduct.Attribute.Platform.UbuntuCodename,
-		Name:         "neovim",
-		PublicPgpKey: resources.EmbeddedFile(files, "files/neovim.asc"),
-		URI:          "https://ppa.launchpadcontent.net/neovim-ppa/stable/ubuntu/",
-		Update:       true,
-		Format:       resources.Sources,
-	})
+	// Install neovim manually since the upstream debian package broke my
+	// install
+	r.Add(&resources.Package{Names: []string{"neovim"}, Uninstall: true})
 
-	r.Add(resources.Pkg("neovim"), dep)
+	tmp := viaduct.TmpFile("nvim-linux-x86_64.tar.gz")
+	dl := r.Add(&resources.Download{URL: "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz", Path: tmp})
+	rmdir := r.Add(&resources.Directory{Path: "/usr/share/nvim", Delete: true})
+	unpack := r.Add(resources.Exec(fmt.Sprintf("tar -C /usr/share -xzf %s", tmp)), dl, rmdir)
+	r.Add(resources.CreateLink("/usr/share/nvim", "/usr/share/nvim-linux-x86_64"), unpack)
 }
 
 func mise() {
