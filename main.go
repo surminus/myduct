@@ -203,13 +203,7 @@ func slack() {
 }
 
 func asdf() {
-	repo := r.Add(&resources.Git{
-		Path:      "~/.asdf",
-		URL:       "https://github.com/asdf-vm/asdf",
-		Reference: "refs/tags/v0.10.2",
-	})
-
-	dir := r.Add(&resources.Directory{Path: "~/.asdf/plugins"}, repo)
+	dir := r.Add(&resources.Directory{Path: "~/.asdf/plugins"})
 
 	// refs/heads/master
 	for plugin, url := range map[string]string{
