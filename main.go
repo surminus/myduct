@@ -17,7 +17,7 @@ var files embed.FS
 
 var packageVersions = map[string]string{
 	"delta":      "0.17.0",
-	"slack":      "4.39.95",
+	"slack":      "4.43.43",
 	"tidal-hifi": "5.16.0",
 	"zoxide":     "0.9.4",
 }
