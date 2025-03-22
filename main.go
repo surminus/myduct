@@ -100,7 +100,6 @@ func main() {
 	zsh()
 	dotfiles()
 	tools()
-	asdf()
 	docker()
 	slack()
 	nodejs()
@@ -147,7 +146,7 @@ func dotfiles() {
 	// Install kitty config
 	kittyCfgDir := r.Add(resources.Dir("~/.config/kitty"))
 	r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo, kittyCfgDir)
-	r.Add(resources.CreateFile("/usr/share/applications/kitty.desktop", resources.EmbeddedFile(files, "files/kitty.desktop")), kittyCfgDir) // Default to start in fullscreen mode
+	r.Add(&resources.Link{Path: "/usr/share/applications/kitty.desktop", Source: "~/.dotfiles/kitty.desktop"}, kittyCfgDir)
 
 	// Configure fonts
 	r.Add(resources.CreateLink("~/.local/share/fonts", "~/.dotfiles/fonts"), repo)
@@ -200,41 +199,6 @@ func slack() {
 
 	v := packageVersions["slack"]
 	installDebPkg("slack", v, fmt.Sprintf("https://downloads.slack-edge.com/desktop-releases/linux/x64/%s/slack-desktop-%s-amd64.deb", v, v))
-}
-
-func asdf() {
-	dir := r.Add(&resources.Directory{Path: "~/.asdf/plugins"})
-
-	// refs/heads/master
-	for plugin, url := range map[string]string{
-		"golang": "kennyp/asdf-golang",
-		"goss":   "raimon49/asdf-goss",
-		"jq":     "azmcode/asdf-jq",
-		"nodejs": "asdf-vm/asdf-nodejs",
-		"python": "danhper/asdf-python",
-		"ruby":   "asdf-vm/asdf-ruby",
-		"rust":   "asdf-community/asdf-rust",
-	} {
-		r.Add(&resources.Git{
-			Path:      fmt.Sprintf("~/.asdf/plugins/%s", plugin),
-			URL:       fmt.Sprintf("https://github.com/%s", url),
-			Reference: "refs/heads/master",
-			Ensure:    true,
-		}, dir)
-	}
-
-	// refs/heads/main
-	for plugin, url := range map[string]string{
-		"awscli":   "MetricMike/asdf-awscli",
-		"opentofu": "virtualroot/asdf-opentofu",
-	} {
-		r.Add(&resources.Git{
-			Path:      fmt.Sprintf("~/.asdf/plugins/%s", plugin),
-			URL:       fmt.Sprintf("https://github.com/%s", url),
-			Reference: "refs/heads/main",
-			Ensure:    true,
-		}, dir)
-	}
 }
 
 func docker() {
