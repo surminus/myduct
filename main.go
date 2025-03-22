@@ -23,7 +23,7 @@ var packageVersions = map[string]string{
 }
 
 var dotFiles = []string{
-	"default-golang-pkgs",
+	"default-go-packages",
 	"gemrc",
 	"gitconfig",
 	"ripgreprc",
@@ -133,6 +133,8 @@ func dotfiles() {
 			Source: filepath.Join("~/.dotfiles", file),
 		}, repo)
 	}
+
+	r.Add(resources.CreateLink("~/.default-golang-pkgs", "~/.default-go-packages"))
 
 	// Neovim configuration
 	r.Add(&resources.Link{Path: "~/.config/nvim", Source: "~/.dotfiles/nvim"}, repo)
