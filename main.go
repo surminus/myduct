@@ -143,6 +143,9 @@ func dotfiles() {
 	// librewolf
 	r.Add(resources.CreateLink("~/.config/librewolf/librewolf.overrides.cfg", "~/.dotfiles/librewolf.overrides.cfg"), repo, r.Add(resources.Dir("~/.config/librewolf")))
 
+	// Mise
+	r.Add(&resources.Link{Path: "~/.config/mise", Source: "~/.dotfiles/mise"}, repo)
+
 	// Install kitty config
 	kittyCfgDir := r.Add(resources.Dir("~/.config/kitty"))
 	r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo, kittyCfgDir)
