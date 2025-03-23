@@ -17,6 +17,7 @@ var files embed.FS
 
 var packageVersions = map[string]string{
 	"delta":      "0.17.0",
+	"obsidian":   "1.8.9",
 	"slack":      "4.43.43",
 	"tidal-hifi": "5.16.0",
 	"zoxide":     "0.9.4",
@@ -97,19 +98,23 @@ func main() {
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "bin")})
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "tmp")})
 
+	// Core
 	zsh()
 	dotfiles()
 	tools()
-	docker()
-	slack()
-	nodejs()
 	user()
-	librewolf()
+
+	// Other
 	deleteSnap()
-	tidal()
+	docker()
 	github()
-	neovim()
+	librewolf()
 	mise()
+	neovim()
+	nodejs()
+	obsidian()
+	slack()
+	tidal()
 
 	r.Run()
 }
@@ -341,4 +346,10 @@ func mise() {
 	})
 
 	r.Add(resources.Pkg("mise"), dep)
+}
+
+func obsidian() {
+	v := packageVersions["obsidian"]
+	installDebPkg("obsidian", v, fmt.Sprintf("https://github.com/obsidianmd/obsidian-releases/releases/download/v%s/obsidian_%s_amd64.deb", v, v))
+	r.Add(resources.Repo("~/surminus/notes", "git@github.com:surminus/notes.git"))
 }
