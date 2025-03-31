@@ -28,7 +28,6 @@ var dotFiles = []string{
 	"gemrc",
 	"gitconfig",
 	"ripgreprc",
-	"tool-versions",
 	"zshrc",
 }
 
