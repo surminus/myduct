@@ -5,6 +5,6 @@ Name=kitty
 GenericName=Terminal emulator
 Comment=Fast, feature-rich, GPU based terminal
 TryExec=kitty
-Exec=LIBGL_ALWAYS_SOFTWARE=true kitty --start-as=maximized
+Exec=kitty --start-as=maximized
 Icon=kitty
 Categories=System;TerminalEmulator;
