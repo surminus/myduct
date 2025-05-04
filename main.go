@@ -94,6 +94,8 @@ func main() {
 		viaduct.Log("Detected home install!")
 	}
 
+	viaduct.RunCommand("ssh-add -k")
+
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "bin")})
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "tmp")})
 
