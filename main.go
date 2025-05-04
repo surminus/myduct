@@ -114,6 +114,7 @@ func main() {
 	neovim()
 	nodejs()
 	obsidian()
+	scummvm()
 	slack()
 	tidal()
 
@@ -288,13 +289,13 @@ func tidal() {
 	installDebPkg("tidal-hifi", v, fmt.Sprintf("https://github.com/Mastermindzh/tidal-hifi/releases/download/%s/tidal-hifi_%s_amd64.deb", v, v))
 }
 
-func installDebPkg(name, version, source string) {
+func installDebPkg(name, version, source string, deps ...*viaduct.Resource) {
 	currentVersion := viaduct.CommandOutput(fmt.Sprintf("dpkg -l | awk '/%s/ {print $3}'", name))
 
 	if !strings.HasPrefix(currentVersion, version) {
 		viaduct.Log(name, " =>", currentVersion)
 		pkg := viaduct.TmpFile(fmt.Sprintf("%s.deb", name))
-		deb := r.Add(resources.Wget(source, pkg))
+		deb := r.Add(resources.Wget(source, pkg), deps...)
 		r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+pkg), deb))
 	} else {
 		viaduct.Log(name, " up to date")
@@ -353,4 +354,12 @@ func obsidian() {
 	v := packageVersions["obsidian"]
 	installDebPkg("obsidian", v, fmt.Sprintf("https://github.com/obsidianmd/obsidian-releases/releases/download/v%s/obsidian_%s_amd64.deb", v, v))
 	r.Add(resources.Repo("~/surminus/notes", "git@github.com:surminus/notes.git"))
+}
+
+func scummvm() {
+	if isHomeInstall() {
+		deps := r.Add(resources.Pkgs("libsdl2-net-2.0-0"))
+		source := "https://downloads.scummvm.org/frs/scummvm/2.9.0/scummvm_2.9.0-1_ubuntu24.04_amd64.deb"
+		installDebPkg("scummvm", "2.9.0-1", source, deps)
+	}
 }
