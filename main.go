@@ -16,11 +16,11 @@ import (
 var files embed.FS
 
 var packageVersions = map[string]string{
-	"delta":      "0.17.0",
+	"delta":      "0.18.2",
 	"obsidian":   "1.8.9",
-	"slack":      "4.43.43",
-	"tidal-hifi": "5.16.0",
-	"zoxide":     "0.9.4",
+	"slack":      "4.43.51",
+	"tidal-hifi": "5.19.0",
+	"zoxide":     "0.9.7",
 }
 
 var dotFiles = []string{
