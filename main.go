@@ -18,7 +18,6 @@ var files embed.FS
 var packageVersions = map[string]string{
 	"delta":      "0.18.2",
 	"obsidian":   "1.8.9",
-	"slack":      "4.43.51",
 	"tidal-hifi": "5.19.0",
 	"zoxide":     "0.9.7",
 }
@@ -209,8 +208,14 @@ func slack() {
 		return
 	}
 
-	v := packageVersions["slack"]
-	installDebPkg("slack", v, fmt.Sprintf("https://downloads.slack-edge.com/desktop-releases/linux/x64/%s/slack-desktop-%s-amd64.deb", v, v))
+	dep := r.Add(&resources.Apt{
+		Name:         "slack",
+		URI:          "https://packagecloud.io/slacktechnologies/slack/debian/",
+		Distribution: "jessie",
+		Update:       true,
+	})
+
+	r.Add(resources.Pkg("slack-desktop"), dep)
 }
 
 func docker() {
