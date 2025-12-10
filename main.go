@@ -209,6 +209,16 @@ func slack() {
 		return
 	}
 
+	// Uninstall for work
+	if !isHomeInstall() {
+		r.Add(&resources.Package{
+			Names:     []string{"slack-desktop"},
+			Uninstall: true,
+		})
+
+		return
+	}
+
 	dep := r.Add(&resources.Apt{
 		Name:         "slack",
 		URI:          "https://packagecloud.io/slacktechnologies/slack/debian/",
