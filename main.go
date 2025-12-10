@@ -109,6 +109,7 @@ func main() {
 	docker()
 	github()
 	librewolf()
+	braveBrowser()
 	mise()
 	neovim()
 	nodejs()
@@ -287,6 +288,19 @@ func librewolf() {
 	})
 
 	r.Add(resources.Pkg("librewolf"), dep)
+}
+
+func braveBrowser() {
+	dep := r.Add(&resources.Apt{
+		Name:          "brave-browser",
+		URI:           "https://brave-browser-apt-release.s3.brave.com",
+		SigningKeyURL: "https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg",
+		Distribution:  "stable",
+		Update:        true,
+		Format:        resources.Sources,
+	})
+
+	r.Add(resources.Pkg("brave-browser"), dep)
 }
 
 func tidal() {
