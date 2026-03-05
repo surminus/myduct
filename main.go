@@ -111,6 +111,7 @@ func main() {
 	librewolf()
 	braveBrowser()
 	mise()
+	claudeCode()
 	neovim()
 	nodejs()
 	obsidian()
@@ -159,6 +160,11 @@ func dotfiles() {
 	kittyCfgDir := r.Add(resources.Dir("~/.config/kitty"))
 	r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo, kittyCfgDir)
 	r.Add(resources.CreateFile("/usr/share/applications/kitty.desktop", resources.EmbeddedFile(files, "files/kitty.desktop")))
+
+	// Claude Code
+	claudeCfgDir := r.Add(resources.Dir("~/.claude"))
+	r.Add(&resources.Link{Path: "~/.claude/CLAUDE.md", Source: "~/.dotfiles/claude/CLAUDE.md"}, repo, claudeCfgDir)
+	r.Add(&resources.Link{Path: "~/.claude/settings.json", Source: "~/.dotfiles/claude/settings.json"}, repo, claudeCfgDir)
 
 	// Configure fonts
 	r.Add(resources.CreateLink("~/.local/share/fonts", "~/.dotfiles/fonts"), repo)
@@ -383,6 +389,18 @@ func obsidian() {
 	v := packageVersions["obsidian"]
 	installDebPkg("obsidian", v, fmt.Sprintf("https://github.com/obsidianmd/obsidian-releases/releases/download/v%s/obsidian_%s_amd64.deb", v, v))
 	r.Add(resources.Repo("~/surminus/notes", "git@github.com:surminus/notes.git"))
+}
+
+func claudeCode() {
+	if viaduct.FileExists(viaduct.ExpandPath("~/.local/bin/claude")) {
+		return
+	}
+
+	const bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases"
+
+	tmp := viaduct.TmpFile("claude")
+	dl := r.Add(&resources.Download{URL: bucket + "/latest/linux-x64/claude", Path: tmp})
+	r.Add(resources.Exec(fmt.Sprintf("install -o laura -g laura %s ~laura/.local/bin/claude", tmp)), dl)
 }
 
 func scummvm() {
