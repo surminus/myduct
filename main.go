@@ -201,7 +201,7 @@ func tools() {
 	installDebPkg("zoxide", v, fmt.Sprintf("https://github.com/ajeetdsouza/zoxide/releases/download/v%s/zoxide_%s-1_amd64.deb", v, v))
 
 	toolkit := r.Add(&resources.Git{Path: "~/surminus/toolkit", URL: "git@github.com:surminus/toolkit", Reference: "refs/heads/main"})
-	for _, file := range []string{"awsexport", "discord-updater", "goinstall"} {
+	for _, file := range []string{"discord-updater", "goinstall"} {
 		r.Add(&resources.Link{
 			Path:   "~/bin/" + file,
 			Source: filepath.Join("~/surminus/toolkit", file),
