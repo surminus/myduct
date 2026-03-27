@@ -166,6 +166,9 @@ func dotfiles() {
 	r.Add(&resources.Link{Path: "~/.claude/CLAUDE.md", Source: "~/.dotfiles/claude/CLAUDE.md"}, repo, claudeCfgDir)
 	r.Add(&resources.Link{Path: "~/.claude/settings.json", Source: "~/.dotfiles/claude/settings.json"}, repo, claudeCfgDir)
 
+	claudeSkillsDir := r.Add(resources.Dir("~/.claude/skills"))
+	r.Add(&resources.Link{Path: "~/.claude/skills/git", Source: "~/.dotfiles/claude/skills/git"}, repo, claudeCfgDir, claudeSkillsDir)
+
 	// Configure fonts
 	r.Add(resources.CreateLink("~/.local/share/fonts", "~/.dotfiles/fonts"), repo)
 	if isKDE() {
