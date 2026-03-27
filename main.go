@@ -169,6 +169,9 @@ func dotfiles() {
 	claudeSkillsDir := r.Add(resources.Dir("~/.claude/skills"))
 	r.Add(&resources.Link{Path: "~/.claude/skills/git", Source: "~/.dotfiles/claude/skills/git"}, repo, claudeCfgDir, claudeSkillsDir)
 
+	// A local directory for general discussion using Claude Code
+	r.Add(resources.Dir("~/claude"))
+
 	// Configure fonts
 	r.Add(resources.CreateLink("~/.local/share/fonts", "~/.dotfiles/fonts"), repo)
 	if isKDE() {
