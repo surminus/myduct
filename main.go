@@ -80,6 +80,17 @@ var homePackages = []string{
 	"ubuntustudio-installer",
 }
 
+// skills to symlink
+var claudeSkills = []string{
+	"git",
+}
+
+// agents to symlink
+var claudeAgents = []string{
+	"code-fixer",
+	"code-reviewer",
+}
+
 var r = viaduct.New()
 
 func main() {
@@ -167,7 +178,16 @@ func dotfiles() {
 	r.Add(&resources.Link{Path: "~/.claude/settings.json", Source: "~/.dotfiles/claude/settings.json"}, repo, claudeCfgDir)
 
 	claudeSkillsDir := r.Add(resources.Dir("~/.claude/skills"))
-	r.Add(&resources.Link{Path: "~/.claude/skills/git", Source: "~/.dotfiles/claude/skills/git"}, repo, claudeCfgDir, claudeSkillsDir)
+
+	for _, skill := range claudeSkills {
+		r.Add(&resources.Link{Path: "~/.claude/skills/" + skill, Source: "~/.dotfiles/claude/skills/" + skill}, repo, claudeCfgDir, claudeSkillsDir)
+	}
+
+	claudeAgentsDir := r.Add(resources.Dir("~/.claude/agents"))
+
+	for _, agent := range claudeAgents {
+		r.Add(&resources.Link{Path: "~/.claude/agents/" + agent, Source: "~/.dotfiles/claude/agents/" + agent}, repo, claudeCfgDir, claudeAgentsDir)
+	}
 
 	// A local directory for general discussion using Claude Code
 	r.Add(resources.Dir("~/claude"))
