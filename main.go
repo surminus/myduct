@@ -187,7 +187,7 @@ func dotfiles() {
 	claudeAgentsDir := r.Add(resources.Dir("~/.claude/agents"))
 
 	for _, agent := range claudeAgents {
-		r.Add(&resources.Link{Path: "~/.claude/agents/" + agent, Source: "~/.dotfiles/claude/agents/" + agent}, repo, claudeCfgDir, claudeAgentsDir)
+		r.Add(&resources.Link{Path: "~/.claude/agents/" + agent + ".md", Source: "~/.dotfiles/claude/agents/" + agent + ".md"}, repo, claudeCfgDir, claudeAgentsDir)
 	}
 
 	// A local directory for general discussion using Claude Code
@@ -320,17 +320,7 @@ func deleteSnap() {
 }
 
 func librewolf() {
-	dep := r.Add(&resources.Apt{
-		Distribution: "librewolf",
-		Name:         "librewolf",
-		Parameters:   map[string]string{"arch": "amd64"},
-		PublicPgpKey: resources.EmbeddedFile(files, "files/librewolf.asc"),
-		URI:          "https://repo.librewolf.net",
-		Update:       true,
-		Format:       resources.Sources,
-	})
-
-	r.Add(resources.Pkg("librewolf"), dep)
+	r.Add(&resources.Package{Names: []string{"librewolf"}, Uninstall: true})
 }
 
 func braveBrowser() {
