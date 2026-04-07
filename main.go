@@ -445,8 +445,11 @@ func claudeCode() {
 	const bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases"
 
 	tmp := viaduct.TmpFile("claude")
-	dl := r.Add(&resources.Download{URL: bucket + "/latest/linux-x64/claude", Path: tmp})
-	r.Add(resources.Exec(fmt.Sprintf("install -o laura -g laura %s ~laura/.local/bin/claude", tmp)), dl)
+	dl := r.Add(&resources.Execute{
+		Command: fmt.Sprintf("version=$(curl -fsSL %s/latest) && curl -fsSL -o %s %s/$version/linux-x64/claude", bucket, tmp, bucket),
+		Unless:  fmt.Sprintf("test -e %s", tmp),
+	})
+	r.Add(resources.Exec(fmt.Sprintf("chmod +x %s && %s install", tmp, tmp)), dl)
 }
 
 func scummvm() {
