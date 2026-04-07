@@ -17,6 +17,7 @@ var files embed.FS
 
 var packageVersions = map[string]string{
 	"delta":      "0.18.2",
+	"kitty":      "0.46.2",
 	"obsidian":   "1.8.9",
 	"tidal-hifi": "5.19.0",
 	"zoxide":     "0.9.7",
@@ -46,7 +47,6 @@ var packages = []string{
 	"hub",
 	"ipcalc",
 	"jq",
-	"kitty",
 	"libbz2-dev",
 	"libffi-dev",
 	"libreoffice-calc",
@@ -123,6 +123,7 @@ func main() {
 	braveBrowser()
 	mise()
 	claudeCode()
+	kitty()
 	neovim()
 	nodejs()
 	obsidian()
@@ -167,10 +168,9 @@ func dotfiles() {
 	// Mise
 	r.Add(&resources.Link{Path: "~/.config/mise", Source: "~/.dotfiles/mise"}, repo)
 
-	// Install kitty config
+	// Kitty config
 	kittyCfgDir := r.Add(resources.Dir("~/.config/kitty"))
 	r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo, kittyCfgDir)
-	r.Add(resources.CreateFile("/usr/share/applications/kitty.desktop", resources.EmbeddedFile(files, "files/kitty.desktop")))
 
 	// Claude Code
 	claudeCfgDir := r.Add(resources.Dir("~/.claude"))
@@ -375,6 +375,35 @@ func github() {
 			Update:        true,
 		}),
 	)
+}
+
+func kitty() {
+	// Remove the apt package in favour of a manual install
+	r.Add(&resources.Package{Names: []string{"kitty"}, Uninstall: true})
+
+	v := packageVersions["kitty"]
+	currentVersion := viaduct.CommandOutput("kitty --version | awk '{print $2}'")
+
+	installDir := fmt.Sprintf("/usr/share/kitty-%s", v)
+
+	if currentVersion != v {
+		viaduct.Log("kitty", " =>", currentVersion)
+		tmp := viaduct.TmpFile("kitty-x86_64.txz")
+		dl := r.Add(&resources.Download{
+			URL:  fmt.Sprintf("https://github.com/kovidgoyal/kitty/releases/download/v%s/kitty-%s-x86_64.txz", v, v),
+			Path: tmp,
+		})
+		rmdir := r.Add(&resources.Directory{Path: installDir, Delete: true})
+		mkdir := r.Add(resources.Dir(installDir), rmdir)
+		unpack := r.Add(resources.Exec(fmt.Sprintf("tar -C %s -xJf %s", installDir, tmp)), dl, mkdir)
+		r.Add(resources.CreateLink("/usr/share/kitty", installDir), unpack)
+		r.Add(resources.CreateLink("/usr/bin/kitty", "/usr/share/kitty/bin/kitty"), unpack)
+		r.Add(resources.CreateLink("/usr/bin/kitten", "/usr/share/kitty/bin/kitten"), unpack)
+	} else {
+		viaduct.Log("kitty", " up to date")
+	}
+
+	r.Add(resources.CreateFile("/usr/share/applications/kitty.desktop", resources.EmbeddedFile(files, "files/kitty.desktop")))
 }
 
 func neovim() {
