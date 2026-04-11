@@ -16,11 +16,12 @@ import (
 var files embed.FS
 
 var packageVersions = map[string]string{
-	"delta":      "0.18.2",
-	"kitty":      "0.46.2",
-	"obsidian":   "1.8.9",
-	"tidal-hifi": "5.19.0",
-	"zoxide":     "0.9.7",
+	"delta":       "0.18.2",
+	"kitty":       "0.46.2",
+	"obsidian":    "1.8.9",
+	"tidal-hifi":  "5.19.0",
+	"tree-sitter": "0.26.8",
+	"zoxide":      "0.9.7",
 }
 
 var dotFiles = []string{
@@ -116,20 +117,20 @@ func main() {
 	user()
 
 	// Other
+	braveBrowser()
 	deleteSnap()
 	docker()
 	github()
-	librewolf()
-	braveBrowser()
-	mise()
-	claudeCode()
 	kitty()
+	librewolf()
+	mise()
 	neovim()
 	nodejs()
 	obsidian()
 	scummvm()
 	slack()
 	tidal()
+	treesitter()
 
 	r.Run()
 }
@@ -161,9 +162,6 @@ func dotfiles() {
 
 	// zsh-theme
 	r.Add(&resources.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, repo)
-
-	// librewolf
-	r.Add(resources.CreateLink("~/.config/librewolf/librewolf.overrides.cfg", "~/.dotfiles/librewolf.overrides.cfg"), repo, r.Add(resources.Dir("~/.config/librewolf")))
 
 	// Mise
 	r.Add(&resources.Link{Path: "~/.config/mise", Source: "~/.dotfiles/mise"}, repo)
@@ -437,25 +435,19 @@ func obsidian() {
 	r.Add(resources.Repo("~/surminus/notes", "git@github.com:surminus/notes.git"))
 }
 
-func claudeCode() {
-	if viaduct.FileExists(viaduct.ExpandPath("~/.local/bin/claude")) {
-		return
-	}
-
-	const bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases"
-
-	tmp := viaduct.TmpFile("claude")
-	dl := r.Add(&resources.Execute{
-		Command: fmt.Sprintf("version=$(curl -fsSL %s/latest) && curl -fsSL -o %s %s/$version/linux-x64/claude", bucket, tmp, bucket),
-		Unless:  fmt.Sprintf("test -e %s", tmp),
-	})
-	r.Add(resources.Exec(fmt.Sprintf("chmod +x %s && %s install", tmp, tmp)), dl)
-}
-
 func scummvm() {
 	if isHomeInstall() {
 		deps := r.Add(resources.Pkgs("libsdl2-net-2.0-0"))
 		source := "https://downloads.scummvm.org/frs/scummvm/2.9.0/scummvm_2.9.0-1_ubuntu24.04_amd64.deb"
 		installDebPkg("scummvm", "2.9.0-1", source, deps)
 	}
+}
+
+func treesitter() {
+	v := packageVersions["tree-sitter"]
+	source := fmt.Sprintf("https://github.com/tree-sitter/tree-sitter/releases/download/v%s/tree-sitter-cli-linux-x64.zip", v)
+	tmp := viaduct.TmpFile("tree-sitter")
+	dl := r.Add(&resources.Download{URL: source, Path: tmp})
+	unzip := r.Add(resources.Exec(fmt.Sprintf("unzip -o %s -d %s", tmp, viaduct.ExpandPath("~/bin"))), dl)
+	r.Add(resources.Exec(fmt.Sprintf("chmod +x %s/tree-sitter", viaduct.ExpandPath("~/bin"))), unzip)
 }

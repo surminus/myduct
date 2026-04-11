@@ -2,6 +2,8 @@ module github.com/surminus/myduct
 
 go 1.26.0
 
+toolchain go1.26.1
+
 require github.com/surminus/viaduct v0.4.0
 
 // replace github.com/surminus/viaduct => /home/laura/surminus/viaduct
