@@ -175,6 +175,7 @@ func dotfiles() {
 	r.Add(&resources.Link{Path: "~/.claude/CLAUDE.md", Source: "~/.dotfiles/claude/CLAUDE.md"}, repo, claudeCfgDir)
 	r.Add(&resources.Link{Path: "~/.claude/settings.json", Source: "~/.dotfiles/claude/settings.json"}, repo, claudeCfgDir)
 	r.Add(&resources.Link{Path: "~/.claude/statusline-command.sh", Source: "~/.dotfiles/claude/statusline-command.sh"}, repo, claudeCfgDir)
+	r.Add(&resources.Link{Path: "~/.claude/hooks", Source: "~/.dotfiles/claude/hooks"}, repo, claudeCfgDir)
 
 	claudeSkillsDir := r.Add(resources.Dir("~/.claude/skills"))
 
