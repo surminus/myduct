@@ -403,6 +403,7 @@ func kitty() {
 	}
 
 	r.Add(resources.CreateFile("/usr/share/applications/kitty.desktop", resources.EmbeddedFile(files, "files/kitty.desktop")))
+	r.Add(resources.CreateLink("/usr/share/icons/hicolor/scalable/apps/kitty.svg", "/usr/share/kitty/share/icons/hicolor/scalable/apps/kitty.svg"))
 }
 
 func neovim() {
