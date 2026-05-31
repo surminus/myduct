@@ -315,6 +315,16 @@ func deleteSnap() {
 	deleteSnap := r.Add(&resources.Package{Names: []string{"snapd"}, Uninstall: true})
 	holdSnap := r.Add(&resources.Execute{Command: "apt-mark hold snapd", Unless: "apt-mark showhold | grep -q snapd"}, deleteSnap)
 	r.Add(resources.CreateFile("/etc/apt/preferences.d/nosnap.pref", resources.EmbeddedFile(files, "files/nosnap.pref")), deleteSnap, holdSnap)
+
+	// Clean up any lingering snap mount units and data left behind after snapd removal
+	r.Add(&resources.Execute{
+		Command: "find /etc/systemd/system -name 'snap*.mount' -o -name 'snap.*.service' -o -name 'snap.*.timer' | xargs --no-run-if-empty rm -f && find /etc/systemd/system -name 'snapd*' | xargs --no-run-if-empty rm -f && systemctl daemon-reload",
+		Unless:  "test ! -d /var/lib/snapd",
+	}, deleteSnap)
+	r.Add(&resources.Execute{
+		Command: "umount /snap/*/* 2>/dev/null; umount /snap/* 2>/dev/null; rm -rf /snap /var/snap /var/lib/snapd",
+		Unless:  "test ! -d /var/lib/snapd",
+	}, deleteSnap)
 }
 
 func librewolf() {
