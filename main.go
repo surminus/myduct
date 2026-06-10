@@ -169,8 +169,7 @@ func dotfiles() {
 	r.Add(&resources.Link{Path: "~/.config/mise", Source: "~/.dotfiles/mise"}, repo)
 
 	// Kitty config
-	kittyCfgDir := r.Add(resources.Dir("~/.config/kitty"))
-	r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo, kittyCfgDir)
+	r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo)
 
 	// Claude Code
 	claudeCfgDir := r.Add(resources.Dir("~/.claude"))
@@ -274,11 +273,10 @@ func docker() {
 
 	install := r.Add(resources.Pkg("docker-ce"), r.Add(resources.AptUpdate(), apt))
 
-	// We need to add a User resource here to manage users, so we can
-	// add the docker group to the user
-	r.Add(&resources.Execute{
-		Command: fmt.Sprintf("usermod -aG docker %s", viaduct.Attribute.User.Username),
-		Unless:  fmt.Sprintf("grep %s /etc/group | grep -q docker", viaduct.Attribute.User.Username),
+	// Add the user to the docker group so they can talk to the daemon
+	r.Add(&resources.User{
+		Name:   viaduct.Attribute.User.Username,
+		Groups: []string{"docker"},
 	}, install)
 }
 
@@ -315,7 +313,12 @@ func ubuntuDistribution() string {
 // Snap is a fucking pain in the ass
 func deleteSnap() {
 	deleteSnap := r.Add(&resources.Package{Names: []string{"snapd"}, Uninstall: true})
-	holdSnap := r.Add(&resources.Execute{Command: "apt-mark hold snapd", Unless: "apt-mark showhold | grep -q snapd"}, deleteSnap)
+
+	// AptHold has no built-in idempotency, and re-holding the now-purged
+	// snapd package errors, so guard on it not already being held
+	hold := resources.AptHold("snapd")
+	hold.Unless = "apt-mark showhold | grep -q snapd"
+	holdSnap := r.Add(hold, deleteSnap)
 	r.Add(resources.CreateFile("/etc/apt/preferences.d/nosnap.pref", resources.EmbeddedFile(files, "files/nosnap.pref")), deleteSnap, holdSnap)
 
 	// Clean up any lingering snap mount units and data left behind after snapd removal
@@ -358,7 +361,7 @@ func installDebPkg(name, version, source string, deps ...*viaduct.Resource) {
 		viaduct.Log(name, " =>", currentVersion)
 		pkg := viaduct.TmpFile(fmt.Sprintf("%s.deb", name))
 		deb := r.Add(resources.Wget(source, pkg), deps...)
-		r.WithLock(r.Add(resources.Exec("sudo dpkg -i "+pkg), deb))
+		r.Add(resources.InstallDeb(pkg), deb)
 	} else {
 		viaduct.Log(name, " up to date")
 	}
@@ -423,10 +426,12 @@ func neovim() {
 	r.Add(&resources.Package{Names: []string{"neovim"}, Uninstall: true})
 
 	tmp := viaduct.TmpFile("nvim-linux-x86_64.tar.gz")
-	dl := r.Add(&resources.Download{URL: "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz", Path: tmp})
-	rmdir := r.Add(&resources.Directory{Path: "/usr/share/nvim", Delete: true})
-	unpack := r.Add(resources.Exec(fmt.Sprintf("tar -C /usr/share -xzf %s", tmp)), dl, rmdir)
-	r.Add(resources.CreateLink("/usr/share/nvim", "/usr/share/nvim-linux-x86_64"), unpack)
+	r.Chain(
+		&resources.Download{URL: "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz", Path: tmp},
+		&resources.Directory{Path: "/usr/share/nvim", Delete: true},
+		resources.Extract(tmp, "/usr/share"),
+		resources.CreateLink("/usr/share/nvim", "/usr/share/nvim-linux-x86_64"),
+	)
 }
 
 func mise() {
@@ -459,10 +464,13 @@ func scummvm() {
 func treesitter() {
 	v := packageVersions["tree-sitter"]
 	source := fmt.Sprintf("https://github.com/tree-sitter/tree-sitter/releases/download/v%s/tree-sitter-cli-linux-x64.zip", v)
-	tmp := viaduct.TmpFile("tree-sitter")
-	dl := r.Add(&resources.Download{URL: source, Path: tmp})
-	unzip := r.Add(resources.Exec(fmt.Sprintf("unzip -o %s -d %s", tmp, viaduct.ExpandPath("~/bin"))), dl)
-	r.Add(resources.Exec(fmt.Sprintf("chmod +x %s/tree-sitter", viaduct.ExpandPath("~/bin"))), unzip)
+	tmp := viaduct.TmpFile("tree-sitter.zip")
+	binDir := viaduct.ExpandPath("~/bin")
+	r.Chain(
+		&resources.Download{URL: source, Path: tmp},
+		&resources.Archive{Path: tmp, Dest: binDir, Pick: []string{"tree-sitter"}},
+		resources.Exec(fmt.Sprintf("chmod +x %s/tree-sitter", binDir)),
+	)
 }
 
 func zenBrowser() {
