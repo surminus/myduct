@@ -17,7 +17,7 @@ var files embed.FS
 
 var packageVersions = map[string]string{
 	"delta":       "0.18.2",
-	"kitty":       "0.46.2",
+	"kitty":       "0.47.2",
 	"obsidian":    "1.8.9",
 	"tidal-hifi":  "5.19.0",
 	"tree-sitter": "0.26.8",
