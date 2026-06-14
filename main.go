@@ -114,6 +114,7 @@ func main() {
 	// Core
 	zsh()
 	dotfiles()
+	gpg()
 	tools()
 	user()
 
@@ -299,6 +300,14 @@ func user() {
 
 	r.Add(resources.DeleteFile("~/.face"))
 	r.Add(resources.DeleteFile("/var/lib/AccountsService/icons/laura"))
+}
+
+// Cache the GPG passphrase for a day so that pass-backed secrets don't prompt
+// for it on every new shell. The stock cache is only 10 minutes.
+func gpg() {
+	r.Add(resources.CreateFile("~/.gnupg/gpg-agent.conf", `default-cache-ttl 86400
+max-cache-ttl 86400
+`))
 }
 
 func ubuntuDistribution() string {
