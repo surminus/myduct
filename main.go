@@ -45,7 +45,6 @@ var packages = []string{
 	"fonts-noto-color-emoji",
 	"git",
 	"htop",
-	"hub",
 	"ipcalc",
 	"jq",
 	"kde-spectacle",
@@ -234,6 +233,9 @@ func tools() {
 			Source: filepath.Join("~/surminus/toolkit", file),
 		}, toolkit)
 	}
+
+	// Ensure hub is uninstalled
+	r.Add(&resources.Package{Names: []string{"hub"}, Uninstall: true})
 }
 
 func slack() {
