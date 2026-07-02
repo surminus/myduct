@@ -21,7 +21,6 @@ var packageVersions = map[string]string{
 	"obsidian":    "1.8.9",
 	"tidal-hifi":  "5.19.0",
 	"tree-sitter": "0.26.8",
-	"zen-browser": "1.20.2b",
 	"zoxide":      "0.9.7",
 }
 
@@ -480,42 +479,9 @@ func treesitter() {
 }
 
 func zenBrowser() {
-	v := packageVersions["zen-browser"]
-	homeDir := viaduct.Attribute.User.HomeDir
-	appImagePath := filepath.Join(homeDir, "Applications", "zen-x86_64.AppImage")
-	versionFile := filepath.Join(homeDir, ".local", "share", "zen-browser", "version")
-
-	appsDir := r.Add(resources.Dir("~/Applications"))
-	zenDataDir := r.Add(resources.Dir("~/.local/share/zen-browser"))
-	desktopDir := r.Add(resources.Dir("~/.local/share/applications"))
-
-	currentVersion := viaduct.CommandOutput(fmt.Sprintf("cat %s 2>/dev/null || echo ''", versionFile))
-
-	if !strings.HasPrefix(currentVersion, v) {
-		viaduct.Log("zen-browser =>", currentVersion)
-		url := fmt.Sprintf("https://github.com/zen-browser/desktop/releases/download/%s/zen-x86_64.AppImage", v)
-		dl := r.Add(&resources.Download{URL: url, Path: appImagePath}, appsDir)
-		chmod := r.Add(resources.Exec(fmt.Sprintf("chmod +x %s", appImagePath)), dl)
-		r.Add(resources.CreateFile(versionFile, v), chmod, zenDataDir)
-	} else {
-		viaduct.Log("zen-browser up to date")
-	}
-
-	desktopContent := fmt.Sprintf(`[Desktop Entry]
-Version=1.0
-Type=Application
-Name=Zen Browser
-GenericName=Web Browser
-Comment=Firefox-based browser with vertical tabs and workspaces
-Exec=env GDK_DPI_SCALE=1.5 %s %%u
-Icon=zen-browser
-Terminal=false
-Categories=Network;WebBrowser;
-MimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/rss+xml;application/rdf+xml;x-scheme-handler/http;x-scheme-handler/https;
-StartupWMClass=zen-browser
-`, appImagePath)
-	r.Add(resources.CreateFile("~/.local/share/applications/zen-browser.desktop", desktopContent), desktopDir, appsDir)
-
-	updater := r.Add(resources.CreateFile("~/bin/zen-update", resources.EmbeddedFile(files, "files/zen-update")))
-	r.Add(resources.Exec(fmt.Sprintf("chmod +x %s/bin/zen-update", homeDir)), updater)
+	// Removed in favour of Brave
+	r.Add(resources.DeleteFile("~/Applications/zen-x86_64.AppImage"))
+	r.Add(resources.DeleteFile("~/.local/share/applications/zen-browser.desktop"))
+	r.Add(resources.DeleteFile("~/bin/zen-update"))
+	r.Add(&resources.Directory{Path: "~/.local/share/zen-browser", Delete: true})
 }
