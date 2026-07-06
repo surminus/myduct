@@ -102,8 +102,6 @@ func main() {
 		viaduct.Log("Detected home install!")
 	}
 
-	viaduct.RunCommand("ssh-add -k")
-
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "bin")})
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "tmp")})
 
@@ -117,17 +115,12 @@ func main() {
 	// Other
 	braveBrowser()
 	deleteSnap()
-	zenBrowser()
 	docker()
 	github()
 	kitty()
-	librewolf()
 	mise()
 	neovim()
-	nodejs()
 	obsidian()
-	scummvm()
-	slack()
 	tidal()
 	treesitter()
 
@@ -199,21 +192,12 @@ func dotfiles() {
 func tools() {
 	r.Add(&resources.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git", Reference: "refs/heads/master"})
 
-	var deps []*viaduct.Resource
-
-	deps = append(deps, r.Add(&resources.Apt{
-		Name:       "git",
-		URI:        "https://ppa.launchpadcontent.net/git-core/ppa/ubuntu",
-		SigningKey: "A1715D88E1DF1F24",
-		Update:     true,
-	}))
-
 	pkgs := packages
 	if isHomeInstall() {
 		pkgs = append(pkgs, homePackages...)
 	}
 
-	r.Add(resources.Pkgs(pkgs...), deps...)
+	r.Add(resources.Pkgs(pkgs...))
 
 	// Install delta
 	v := packageVersions["delta"]
@@ -228,32 +212,6 @@ func tools() {
 
 	// Ensure hub is uninstalled
 	r.Add(&resources.Package{Names: []string{"hub"}, Uninstall: true})
-}
-
-func slack() {
-	// Don't bother installing on WSL
-	if viaduct.Attribute.Hostname == "win-hub" {
-		return
-	}
-
-	// Uninstall for work
-	if !isHomeInstall() {
-		r.Add(&resources.Package{
-			Names:     []string{"slack-desktop"},
-			Uninstall: true,
-		})
-
-		return
-	}
-
-	dep := r.Add(&resources.Apt{
-		Name:         "slack",
-		URI:          "https://packagecloud.io/slacktechnologies/slack/debian/",
-		Distribution: "jessie",
-		Update:       true,
-	})
-
-	r.Add(resources.Pkg("slack-desktop"), dep)
 }
 
 func docker() {
@@ -273,20 +231,6 @@ func docker() {
 		Name:   viaduct.Attribute.User.Username,
 		Groups: []string{"docker"},
 	}, install)
-}
-
-func nodejs() {
-	if viaduct.Attribute.Platform.VersionID != "24.04" {
-		r.Add(&resources.Apt{
-			Name:          "node",
-			URI:           "https://deb.nodesource.com/node_18.x",
-			SigningKeyURL: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key",
-			Distribution:  ubuntuDistribution(),
-			Update:        true,
-		})
-	}
-
-	r.Add(resources.Pkg("nodejs"))
 }
 
 func user() {
@@ -333,10 +277,6 @@ func deleteSnap() {
 		Command: "umount /snap/*/* 2>/dev/null; umount /snap/* 2>/dev/null; rm -rf /snap /var/snap /var/lib/snapd",
 		Unless:  "test ! -d /var/lib/snapd",
 	}, deleteSnap)
-}
-
-func librewolf() {
-	r.Add(&resources.Package{Names: []string{"librewolf"}, Uninstall: true})
 }
 
 func braveBrowser() {
@@ -456,14 +396,6 @@ func obsidian() {
 	r.Add(resources.Repo("~/surminus/notes", "git@github.com:surminus/notes.git"))
 }
 
-func scummvm() {
-	if isHomeInstall() {
-		deps := r.Add(resources.Pkgs("libsdl2-net-2.0-0"))
-		source := "https://downloads.scummvm.org/frs/scummvm/2.9.0/scummvm_2.9.0-1_ubuntu24.04_amd64.deb"
-		installDebPkg("scummvm", "2.9.0-1", source, deps)
-	}
-}
-
 func treesitter() {
 	v := packageVersions["tree-sitter"]
 	source := fmt.Sprintf("https://github.com/tree-sitter/tree-sitter/releases/download/v%s/tree-sitter-cli-linux-x64.zip", v)
@@ -474,12 +406,4 @@ func treesitter() {
 		&resources.Archive{Path: tmp, Dest: binDir, Pick: []string{"tree-sitter"}},
 		resources.Exec(fmt.Sprintf("chmod +x %s/tree-sitter", binDir)),
 	)
-}
-
-func zenBrowser() {
-	// Removed in favour of Brave
-	r.Add(resources.DeleteFile("~/Applications/zen-x86_64.AppImage"))
-	r.Add(resources.DeleteFile("~/.local/share/applications/zen-browser.desktop"))
-	r.Add(resources.DeleteFile("~/bin/zen-update"))
-	r.Add(&resources.Directory{Path: "~/.local/share/zen-browser", Delete: true})
 }
