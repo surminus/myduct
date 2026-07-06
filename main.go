@@ -64,12 +64,10 @@ var packages = []string{
 	"sd",
 	"shellcheck",
 	"software-properties-common",
-	"tldr",
 	"tmux",
 	"vim",
 	"vim-gui-common",
 	"vim-nox",
-	"xclip",
 	"xkcdpass",
 	"zlib1g-dev",
 }
