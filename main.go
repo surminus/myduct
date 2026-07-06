@@ -59,6 +59,7 @@ var packages = []string{
 	"network-manager-openvpn-gnome",
 	"openvpn",
 	"pass",
+	"pinentry-gnome3",
 	"pwgen",
 	"resolvconf",
 	"ripgrep",
@@ -244,10 +245,20 @@ func user() {
 
 // Cache the GPG passphrase for a day so that pass-backed secrets don't prompt
 // for it on every new shell. The stock cache is only 10 minutes.
+//
+// Use pinentry-gnome3, which (unlike pinentry-qt) integrates with libsecret and
+// offers a "Save in password manager" checkbox. Ticking it stores the passphrase
+// in KWallet (which provides the Secret Service on this KDE box), so GPG stops
+// prompting entirely while logged in with the wallet unlocked.
 func gpg() {
+	// On a fresh install ~/.gnupg doesn't exist yet, so dropping gpg-agent.conf
+	// into it fails. Create it first (0700, or gpg refuses to use it).
+	dir := r.Add(&resources.Directory{Path: "~/.gnupg", Permissions: resources.Permissions{Mode: 0o700}})
+
 	r.Add(resources.CreateFile("~/.gnupg/gpg-agent.conf", `default-cache-ttl 86400
 max-cache-ttl 86400
-`))
+pinentry-program /usr/bin/pinentry-gnome3
+`), dir)
 }
 
 func ubuntuDistribution() string {
