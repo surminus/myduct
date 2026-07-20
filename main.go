@@ -16,12 +16,13 @@ import (
 var files embed.FS
 
 var packageVersions = map[string]string{
-	"delta":       "0.18.2",
-	"kitty":       "0.47.2",
-	"obsidian":    "1.8.9",
-	"tidal-hifi":  "5.19.0",
-	"tree-sitter": "0.26.8",
-	"zoxide":      "0.9.7",
+	"delta":           "0.18.2",
+	"kitty":           "0.47.2",
+	"obsidian":        "1.8.9",
+	"thorium-browser": "138.0.7204.303",
+	"tidal-hifi":      "5.19.0",
+	"tree-sitter":     "0.26.8",
+	"zoxide":          "0.9.7",
 }
 
 var dotFiles = []string{
@@ -114,6 +115,7 @@ func main() {
 
 	// Other
 	braveBrowser()
+	thorium()
 	deleteSnap()
 	docker()
 	github()
@@ -290,6 +292,14 @@ func braveBrowser() {
 	})
 
 	r.Add(resources.Pkg("brave-browser"), dep)
+}
+
+// Thorium is an optimised Chromium fork. I install the AVX2 build to match
+// this machine's CPU. Note the Linux releases lag upstream Chromium, so this
+// pins to the newest Linux .deb rather than the latest overall tag.
+func thorium() {
+	v := packageVersions["thorium-browser"]
+	installDebPkg("thorium-browser", v, fmt.Sprintf("https://github.com/Alex313031/thorium/releases/download/M%s/thorium-browser_%s_AVX2.deb", v, v))
 }
 
 func tidal() {
