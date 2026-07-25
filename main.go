@@ -48,6 +48,7 @@ var packages = []string{
 	"ipcalc",
 	"jq",
 	"kde-spectacle",
+	"kolourpaint",
 	"libbz2-dev",
 	"libffi-dev",
 	"libreoffice-calc",
