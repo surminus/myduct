@@ -95,7 +95,11 @@ var homePackages = []string{
 
 // skills to symlink
 var claudeSkills = []string{
+	"eli5",
+	"engineering-team",
+	"explain",
 	"git",
+	"personality",
 }
 
 // agents to symlink
@@ -143,6 +147,7 @@ func main() {
 	neovim()
 	treesitter()
 	claudeCode()
+	uv()
 
 	if isServerInstall() {
 		server()
@@ -213,6 +218,7 @@ func dotfiles() {
 	r.Add(&resources.Link{Path: "~/.claude/CLAUDE.md", Source: "~/.dotfiles/claude/CLAUDE.md"}, repo, claudeCfgDir)
 	r.Add(&resources.Link{Path: "~/.claude/settings.json", Source: "~/.dotfiles/claude/settings.json"}, repo, claudeCfgDir)
 	r.Add(&resources.Link{Path: "~/.claude/statusline-command.sh", Source: "~/.dotfiles/claude/statusline-command.sh"}, repo, claudeCfgDir)
+	r.Add(&resources.Link{Path: "~/.claude/hooks", Source: "~/.dotfiles/claude/hooks"}, repo, claudeCfgDir)
 
 	claudeSkillsDir := r.Add(resources.Dir("~/.claude/skills"))
 
@@ -499,6 +505,19 @@ func claudeCode() {
 	r.Add(&resources.Execute{
 		Command: fmt.Sprintf("runuser -u %s -- bash -c 'curl -fsSL https://claude.ai/install.sh | bash'", u.Username),
 		Unless:  fmt.Sprintf("test -x %s/.local/bin/claude", u.HomeDir),
+	})
+}
+
+// uv installs uv and uvx, which my MCP servers run under. Like Claude Code it
+// installs into ~/.local/bin and updates itself from there.
+//
+// UV_NO_MODIFY_PATH stops the installer appending to ~/.zshrc, which is a
+// symlink into the dotfiles repo and so would show up as a dirty checkout.
+func uv() {
+	u := viaduct.Attribute.User
+	r.Add(&resources.Execute{
+		Command: fmt.Sprintf("runuser -u %s -- bash -c 'curl -LsSf https://astral.sh/uv/install.sh | UV_NO_MODIFY_PATH=1 sh'", u.Username),
+		Unless:  fmt.Sprintf("test -x %s/.local/bin/uv", u.HomeDir),
 	})
 }
 
