@@ -22,7 +22,7 @@ var packageVersions = map[string]string{
 	"thorium-browser": "138.0.7204.303",
 	"tidal-hifi":      "5.19.0",
 	"tree-sitter":     "0.26.8",
-	"zoxide":          "0.9.7",
+	"zoxide":          "0.10.0",
 }
 
 var dotFiles = []string{
