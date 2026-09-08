@@ -175,6 +175,7 @@ func desktop() {
 // I run Claude Code sessions on
 func server() {
 	r.Add(resources.Pkgs(serverPackages...))
+	sshAgent()
 	autostop()
 }
 
@@ -547,6 +548,30 @@ func uv() {
 		Command: fmt.Sprintf("runuser -u %s -- bash -c 'curl -LsSf https://astral.sh/uv/install.sh | UV_NO_MODIFY_PATH=1 sh'", u.Username),
 		Unless:  fmt.Sprintf("test -x %s/.local/bin/uv", u.HomeDir),
 	})
+}
+
+// sshAgent runs one ssh-agent per login through systemd, so every shell and
+// tmux window on the server shares it and sudo myduct can reach my key. The
+// desktop gets its agent from KDE. AddKeysToAgent means the first ssh or git
+// that uses the key loads it, no ssh-add. Lingering keeps the user manager,
+// and so the agent, running whether or not I am logged in.
+func sshAgent() {
+	u := viaduct.Attribute.User
+
+	unitDir := r.Add(resources.Dir("~/.config/systemd/user"))
+	unit := r.Add(resources.CreateFile("~/.config/systemd/user/ssh-agent.service", resources.EmbeddedFile(files, "files/ssh-agent.service")), unitDir)
+
+	linger := r.Add(&resources.Execute{
+		Command: fmt.Sprintf("loginctl enable-linger %s", u.Username),
+		Unless:  fmt.Sprintf("test -f /var/lib/systemd/linger/%s", u.Username),
+	})
+
+	r.Add(&resources.Execute{
+		Command: fmt.Sprintf("systemctl --user -M %s@ daemon-reload && systemctl --user -M %s@ enable --now ssh-agent", u.Username, u.Username),
+		Unless:  fmt.Sprintf("systemctl --user -M %s@ is-enabled ssh-agent", u.Username),
+	}, unit, linger)
+
+	r.Add(resources.AppendLine("~/.ssh/config", "AddKeysToAgent yes"))
 }
 
 // autostop powers the server off after half an hour with nobody logged in
