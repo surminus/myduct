@@ -145,6 +145,7 @@ func main() {
 	mise()
 	neovim()
 	treesitter()
+	claudeCode()
 
 	if isServerInstall() {
 		server()
@@ -535,6 +536,16 @@ func zellij() {
 		&resources.Archive{Path: tmp, Dest: "/usr/local/bin", Pick: []string{"zellij"}},
 		resources.Exec("chmod +x /usr/local/bin/zellij"),
 	)
+}
+
+// claudeCode installs Claude Code with the native installer, which puts the
+// binary in ~/.local/bin and keeps itself up to date from there
+func claudeCode() {
+	u := viaduct.Attribute.User
+	r.Add(&resources.Execute{
+		Command: fmt.Sprintf("runuser -u %s -- bash -c 'curl -fsSL https://claude.ai/install.sh | bash'", u.Username),
+		Unless:  fmt.Sprintf("test -x %s/.local/bin/claude", u.HomeDir),
+	})
 }
 
 // autostop powers the server off after half an hour with nobody logged in
