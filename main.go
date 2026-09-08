@@ -284,7 +284,7 @@ func deleteSnap() {
 
 	// Clean up any lingering snap mount units and data left behind after snapd removal
 	r.Add(&resources.Execute{
-		Command: "find /etc/systemd/system -name 'snap*.mount' -o -name 'snap.*.service' -o -name 'snap.*.timer' | xargs --no-run-if-empty rm -f && find /etc/systemd/system -name 'snapd*' | xargs --no-run-if-empty rm -f && systemctl daemon-reload",
+		Command: "find /etc/systemd/system -name 'snap*.mount' -o -name 'snap.*.service' -o -name 'snap.*.timer' | xargs --no-run-if-empty rm -f && find /etc/systemd/system -name 'snapd*' | xargs --no-run-if-empty rm -rf && systemctl daemon-reload",
 		Unless:  "test ! -d /var/lib/snapd",
 	}, deleteSnap)
 	r.Add(&resources.Execute{
