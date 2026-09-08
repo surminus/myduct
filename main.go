@@ -205,11 +205,11 @@ func tools() {
 
 	// Install delta
 	v := packageVersions["delta"]
-	installDebPkg("git-delta", v, fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", v, v))
+	installDebPkg("git-delta", v, fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_%s.deb", v, v, debArch()))
 
 	// Install zoxide
 	v = packageVersions["zoxide"]
-	installDebPkg("zoxide", v, fmt.Sprintf("https://github.com/ajeetdsouza/zoxide/releases/download/v%s/zoxide_%s-1_amd64.deb", v, v))
+	installDebPkg("zoxide", v, fmt.Sprintf("https://github.com/ajeetdsouza/zoxide/releases/download/v%s/zoxide_%s-1_%s.deb", v, v, debArch()))
 
 	// toolkit is always on PATH
 	r.Add(&resources.Git{Path: "~/surminus/toolkit", URL: "git@github.com:surminus/toolkit", Reference: "refs/heads/main"})
@@ -342,12 +342,29 @@ func isHomeInstall() bool {
 	return viaduct.FileExists(viaduct.ExpandPath("~/.myducthome"))
 }
 
+// debArch is the Debian package architecture name, which happens to match
+// the Go one (amd64, arm64)
+func debArch() string {
+	return viaduct.Attribute.Arch
+}
+
+// unameArch is the architecture as uname -m reports it, which is what most
+// GitHub release tarballs use in their file names
+func unameArch() string {
+	switch viaduct.Attribute.Arch {
+	case "arm64":
+		return "aarch64"
+	default:
+		return "x86_64"
+	}
+}
+
 func github() {
 	r.Add(resources.Pkg("gh"),
 		r.Add(&resources.Apt{
 			Distribution:  "stable",
 			Name:          "github",
-			Parameters:    map[string]string{"arch": "amd64"},
+			Parameters:    map[string]string{"arch": debArch()},
 			SigningKeyURL: "https://cli.github.com/packages/githubcli-archive-keyring.gpg",
 			URI:           "https://cli.github.com/packages",
 			Update:        true,
@@ -390,12 +407,18 @@ func neovim() {
 	// install
 	r.Add(&resources.Package{Names: []string{"neovim"}, Uninstall: true})
 
-	tmp := viaduct.TmpFile("nvim-linux-x86_64.tar.gz")
+	// Neovim names its arm64 build "arm64", not "aarch64"
+	arch := "x86_64"
+	if viaduct.Attribute.Arch == "arm64" {
+		arch = "arm64"
+	}
+
+	tmp := viaduct.TmpFile(fmt.Sprintf("nvim-linux-%s.tar.gz", arch))
 	r.Chain(
-		&resources.Download{URL: "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz", Path: tmp},
+		&resources.Download{URL: fmt.Sprintf("https://github.com/neovim/neovim/releases/latest/download/nvim-linux-%s.tar.gz", arch), Path: tmp},
 		&resources.Directory{Path: "/usr/share/nvim", Delete: true},
 		resources.Extract(tmp, "/usr/share"),
-		resources.CreateLink("/usr/share/nvim", "/usr/share/nvim-linux-x86_64"),
+		resources.CreateLink("/usr/share/nvim", fmt.Sprintf("/usr/share/nvim-linux-%s", arch)),
 	)
 }
 
@@ -403,7 +426,7 @@ func mise() {
 	dep := r.Add(&resources.Apt{
 		Distribution:  "stable",
 		Name:          "mise",
-		Parameters:    map[string]string{"arch": "amd64"},
+		Parameters:    map[string]string{"arch": debArch()},
 		SigningKeyURL: "https://mise.jdx.dev/gpg-key.pub",
 		URI:           "https://mise.jdx.dev/deb ",
 		Update:        true,
@@ -419,8 +442,14 @@ func obsidian() {
 }
 
 func treesitter() {
+	// tree-sitter names its builds "x64" and "arm64"
+	arch := "x64"
+	if viaduct.Attribute.Arch == "arm64" {
+		arch = "arm64"
+	}
+
 	v := packageVersions["tree-sitter"]
-	source := fmt.Sprintf("https://github.com/tree-sitter/tree-sitter/releases/download/v%s/tree-sitter-cli-linux-x64.zip", v)
+	source := fmt.Sprintf("https://github.com/tree-sitter/tree-sitter/releases/download/v%s/tree-sitter-cli-linux-%s.zip", v, arch)
 	tmp := viaduct.TmpFile("tree-sitter.zip")
 	binDir := viaduct.ExpandPath("~/bin")
 	r.Chain(
