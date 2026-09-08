@@ -22,6 +22,7 @@ var packageVersions = map[string]string{
 	"thorium-browser": "138.0.7204.303",
 	"tidal-hifi":      "5.19.0",
 	"tree-sitter":     "0.26.8",
+	"zellij":          "0.45.1",
 	"zoxide":          "0.9.7",
 }
 
@@ -33,16 +34,15 @@ var dotFiles = []string{
 	"zshrc",
 }
 
+// packages installed everywhere, desktop or server
 var packages = []string{
 	"apt-transport-https",
 	"bat",
-	"blueman",
 	"ca-certificates",
 	"colordiff",
 	"curl",
 	"exuberant-ctags",
 	"fd-find",
-	"fonts-noto-color-emoji",
 	"git",
 	"htop",
 	"ipcalc",
@@ -51,28 +51,43 @@ var packages = []string{
 	"kolourpaint",
 	"libbz2-dev",
 	"libffi-dev",
-	"libreoffice-calc",
 	"libsqlite3-dev",
 	"libssl-dev",
 	"libterm-readkey-perl",
 	"libyaml-dev",
 	"ncdu",
-	"network-manager-openvpn-gnome",
-	"openvpn",
-	"pass",
-	"pinentry-gnome3",
 	"pwgen",
-	"resolvconf",
 	"ripgrep",
 	"sd",
 	"shellcheck",
 	"software-properties-common",
 	"tmux",
 	"vim",
-	"vim-gui-common",
 	"vim-nox",
 	"xkcdpass",
 	"zlib1g-dev",
+}
+
+// packages only installed on desktops
+var desktopPackages = []string{
+	"blueman",
+	"fonts-noto-color-emoji",
+	"kde-spectacle",
+	"libreoffice-calc",
+	"network-manager-openvpn-gnome",
+	"openvpn",
+	// pass holds my personal passwords, which have no business on a server
+	"pass",
+	"resolvconf",
+	"vim-gui-common",
+}
+
+// packages only installed on servers
+var serverPackages = []string{
+	"build-essential",
+	"mosh",
+	"pkg-config",
+	"unzip",
 }
 
 // packages only installed for home installs
@@ -105,30 +120,56 @@ func main() {
 		viaduct.Log("Detected home install!")
 	}
 
+	if isServerInstall() {
+		viaduct.Log("Detected server install!")
+	}
+
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "bin")})
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "tmp")})
 
 	// Core
 	zsh()
 	dotfiles()
-	gpg()
 	tools()
 	user()
 
-	// Other
-	braveBrowser()
-	thorium()
+	// gpg is only for pass, which only desktops get
+	if !isServerInstall() {
+		gpg()
+	}
+
+	// Everywhere
 	deleteSnap()
 	docker()
 	github()
-	kitty()
 	mise()
 	neovim()
-	obsidian()
-	tidal()
 	treesitter()
 
+	if isServerInstall() {
+		server()
+	} else {
+		desktop()
+	}
+
 	r.Run()
+}
+
+// desktop installs everything that only makes sense with a screen attached
+func desktop() {
+	braveBrowser()
+	thorium()
+	kitty()
+	obsidian()
+	tidal()
+}
+
+// server installs the extras for a headless box, currently the EC2 instance
+// I run Claude Code sessions on
+func server() {
+	r.Add(resources.Pkgs(serverPackages...))
+	zellij()
+	autostop()
 }
 
 func zsh() {
@@ -153,17 +194,22 @@ func dotfiles() {
 
 	r.Add(resources.CreateLink("~/.default-golang-pkgs", "~/.default-go-packages"))
 
+	// A fresh server has no ~/.config yet
+	configDir := r.Add(resources.Dir("~/.config"))
+
 	// Neovim configuration
-	r.Add(&resources.Link{Path: "~/.config/nvim", Source: "~/.dotfiles/nvim"}, repo)
+	r.Add(&resources.Link{Path: "~/.config/nvim", Source: "~/.dotfiles/nvim"}, repo, configDir)
 
 	// zsh-theme
 	r.Add(&resources.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, repo)
 
 	// Mise
-	r.Add(&resources.Link{Path: "~/.config/mise", Source: "~/.dotfiles/mise"}, repo)
+	r.Add(&resources.Link{Path: "~/.config/mise", Source: "~/.dotfiles/mise"}, repo, configDir)
 
 	// Kitty config
-	r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo)
+	if !isServerInstall() {
+		r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo, configDir)
+	}
 
 	// Claude Code
 	claudeCfgDir := r.Add(resources.Dir("~/.claude"))
@@ -187,9 +233,11 @@ func dotfiles() {
 	r.Add(resources.Dir("~/claude"))
 
 	// Configure fonts
-	r.Add(resources.CreateLink("~/.local/share/fonts", "~/.dotfiles/fonts"), repo)
-	if isKDE() {
-		r.Add(resources.CreateFile("/etc/fonts/conf.avail/56-kubuntu-noto.conf", resources.EmbeddedFile(files, "files/56-kubuntu-noto.conf")))
+	if !isServerInstall() {
+		r.Add(resources.CreateLink("~/.local/share/fonts", "~/.dotfiles/fonts"), repo)
+		if isKDE() {
+			r.Add(resources.CreateFile("/etc/fonts/conf.avail/56-kubuntu-noto.conf", resources.EmbeddedFile(files, "files/56-kubuntu-noto.conf")))
+		}
 	}
 }
 
@@ -197,6 +245,9 @@ func tools() {
 	r.Add(&resources.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git", Reference: "refs/heads/master"})
 
 	pkgs := packages
+	if !isServerInstall() {
+		pkgs = append(pkgs, desktopPackages...)
+	}
 	if isHomeInstall() {
 		pkgs = append(pkgs, homePackages...)
 	}
@@ -342,6 +393,12 @@ func isHomeInstall() bool {
 	return viaduct.FileExists(viaduct.ExpandPath("~/.myducthome"))
 }
 
+// For a server install, touch ~/.myductserver to skip everything that needs
+// a desktop and install the headless extras instead
+func isServerInstall() bool {
+	return viaduct.FileExists(viaduct.ExpandPath("~/.myductserver"))
+}
+
 // debArch is the Debian package architecture name, which happens to match
 // the Go one (amd64, arm64)
 func debArch() string {
@@ -457,4 +514,49 @@ func treesitter() {
 		&resources.Archive{Path: tmp, Dest: binDir, Pick: []string{"tree-sitter"}},
 		resources.Exec(fmt.Sprintf("chmod +x %s/tree-sitter", binDir)),
 	)
+}
+
+// zellij is the terminal multiplexer I use on the server, where there is no
+// kitty to give me tabs and splits
+func zellij() {
+	v := packageVersions["zellij"]
+	currentVersion := viaduct.CommandOutput("zellij --version 2>/dev/null | awk '{print $2}'")
+
+	if currentVersion == v {
+		viaduct.Log("zellij", " up to date")
+		return
+	}
+
+	viaduct.Log("zellij", " =>", currentVersion)
+	source := fmt.Sprintf("https://github.com/zellij-org/zellij/releases/download/v%s/zellij-%s-unknown-linux-musl.tar.gz", v, unameArch())
+	tmp := viaduct.TmpFile("zellij.tar.gz")
+	r.Chain(
+		&resources.Download{URL: source, Path: tmp},
+		&resources.Archive{Path: tmp, Dest: "/usr/local/bin", Pick: []string{"zellij"}},
+		resources.Exec("chmod +x /usr/local/bin/zellij"),
+	)
+}
+
+// autostop powers the server off after half an hour with nobody logged in
+// and nothing running, so a forgotten box does not run up a bill
+func autostop() {
+	script := r.Add(&resources.File{
+		Path:        "/usr/local/bin/claude-box-autostop",
+		Content:     resources.EmbeddedFile(files, "files/claude-box-autostop.sh"),
+		Permissions: resources.Permissions{Mode: 0o755, Root: true},
+	})
+	// The units run as root, so root has to own them too. Otherwise viaduct
+	// hands them to my user and anything running as me can rewrite ExecStart.
+	service := r.Add(&resources.File{
+		Path:        "/etc/systemd/system/claude-box-autostop.service",
+		Content:     resources.EmbeddedFile(files, "files/claude-box-autostop.service"),
+		Permissions: resources.Permissions{Mode: 0o644, Root: true},
+	})
+	timer := r.Add(&resources.File{
+		Path:        "/etc/systemd/system/claude-box-autostop.timer",
+		Content:     resources.EmbeddedFile(files, "files/claude-box-autostop.timer"),
+		Permissions: resources.Permissions{Mode: 0o644, Root: true},
+	})
+	reload := r.Add(resources.Exec("systemctl daemon-reload"), script, service, timer)
+	r.Add(&resources.Service{Name: "claude-box-autostop.timer", Action: "start", Enable: true}, reload)
 }
