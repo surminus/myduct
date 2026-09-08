@@ -22,7 +22,6 @@ var packageVersions = map[string]string{
 	"thorium-browser": "138.0.7204.303",
 	"tidal-hifi":      "5.19.0",
 	"tree-sitter":     "0.26.8",
-	"zellij":          "0.45.1",
 	"zoxide":          "0.9.7",
 }
 
@@ -169,7 +168,6 @@ func desktop() {
 // I run Claude Code sessions on
 func server() {
 	r.Add(resources.Pkgs(serverPackages...))
-	zellij()
 	autostop()
 }
 
@@ -406,17 +404,6 @@ func debArch() string {
 	return viaduct.Attribute.Arch
 }
 
-// unameArch is the architecture as uname -m reports it, which is what most
-// GitHub release tarballs use in their file names
-func unameArch() string {
-	switch viaduct.Attribute.Arch {
-	case "arm64":
-		return "aarch64"
-	default:
-		return "x86_64"
-	}
-}
-
 func github() {
 	r.Add(resources.Pkg("gh"),
 		r.Add(&resources.Apt{
@@ -514,27 +501,6 @@ func treesitter() {
 		&resources.Download{URL: source, Path: tmp},
 		&resources.Archive{Path: tmp, Dest: binDir, Pick: []string{"tree-sitter"}},
 		resources.Exec(fmt.Sprintf("chmod +x %s/tree-sitter", binDir)),
-	)
-}
-
-// zellij is the terminal multiplexer I use on the server, where there is no
-// kitty to give me tabs and splits
-func zellij() {
-	v := packageVersions["zellij"]
-	currentVersion := viaduct.CommandOutput("zellij --version 2>/dev/null | awk '{print $2}'")
-
-	if currentVersion == v {
-		viaduct.Log("zellij", " up to date")
-		return
-	}
-
-	viaduct.Log("zellij", " =>", currentVersion)
-	source := fmt.Sprintf("https://github.com/zellij-org/zellij/releases/download/v%s/zellij-%s-unknown-linux-musl.tar.gz", v, unameArch())
-	tmp := viaduct.TmpFile("zellij.tar.gz")
-	r.Chain(
-		&resources.Download{URL: source, Path: tmp},
-		&resources.Archive{Path: tmp, Dest: "/usr/local/bin", Pick: []string{"zellij"}},
-		resources.Exec("chmod +x /usr/local/bin/zellij"),
 	)
 }
 
