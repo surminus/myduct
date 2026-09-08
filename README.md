@@ -59,6 +59,13 @@ Configure for home install (optional):
 touch ~/.myducthome
 ```
 
+Configure for a server install (optional). This skips browsers, kitty and
+the other desktop bits, and adds mosh and a systemd timer that
+powers the machine off after half an hour idle:
+```
+touch ~/.myductserver
+```
+
 Configure system:
 ```
 sudo ./myduct

@@ -22,7 +22,7 @@ var packageVersions = map[string]string{
 	"thorium-browser": "138.0.7204.303",
 	"tidal-hifi":      "5.19.0",
 	"tree-sitter":     "0.26.8",
-	"zoxide":          "0.9.7",
+	"zoxide":          "0.10.0",
 }
 
 var dotFiles = []string{
@@ -30,19 +30,19 @@ var dotFiles = []string{
 	"gemrc",
 	"gitconfig",
 	"ripgreprc",
+	"tmux.conf",
 	"zshrc",
 }
 
+// packages installed everywhere, desktop or server
 var packages = []string{
 	"apt-transport-https",
 	"bat",
-	"blueman",
 	"ca-certificates",
 	"colordiff",
 	"curl",
 	"exuberant-ctags",
 	"fd-find",
-	"fonts-noto-color-emoji",
 	"git",
 	"htop",
 	"ipcalc",
@@ -51,28 +51,43 @@ var packages = []string{
 	"kolourpaint",
 	"libbz2-dev",
 	"libffi-dev",
-	"libreoffice-calc",
 	"libsqlite3-dev",
 	"libssl-dev",
 	"libterm-readkey-perl",
 	"libyaml-dev",
 	"ncdu",
-	"network-manager-openvpn-gnome",
-	"openvpn",
-	"pass",
-	"pinentry-gnome3",
 	"pwgen",
-	"resolvconf",
 	"ripgrep",
 	"sd",
 	"shellcheck",
 	"software-properties-common",
 	"tmux",
 	"vim",
-	"vim-gui-common",
 	"vim-nox",
 	"xkcdpass",
 	"zlib1g-dev",
+}
+
+// packages only installed on desktops
+var desktopPackages = []string{
+	"blueman",
+	"fonts-noto-color-emoji",
+	"kde-spectacle",
+	"libreoffice-calc",
+	"network-manager-openvpn-gnome",
+	"openvpn",
+	// pass holds my personal passwords, which have no business on a server
+	"pass",
+	"resolvconf",
+	"vim-gui-common",
+}
+
+// packages only installed on servers
+var serverPackages = []string{
+	"build-essential",
+	"mosh",
+	"pkg-config",
+	"unzip",
 }
 
 // packages only installed for home installs
@@ -83,7 +98,11 @@ var homePackages = []string{
 
 // skills to symlink
 var claudeSkills = []string{
+	"eli5",
+	"engineering-team",
+	"explain",
 	"git",
+	"personality",
 }
 
 // agents to symlink
@@ -105,30 +124,59 @@ func main() {
 		viaduct.Log("Detected home install!")
 	}
 
+	if isServerInstall() {
+		viaduct.Log("Detected server install!")
+	}
+
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "bin")})
 	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "tmp")})
 
 	// Core
 	zsh()
 	dotfiles()
-	gpg()
 	tools()
 	user()
 
-	// Other
-	braveBrowser()
-	thorium()
+	// gpg is only for pass, which only desktops get
+	if !isServerInstall() {
+		gpg()
+	}
+
+	// Everywhere
 	deleteSnap()
 	docker()
 	github()
-	kitty()
 	mise()
 	neovim()
-	obsidian()
-	tidal()
 	treesitter()
+	claudeCode()
+	uv()
+	tmux()
+
+	if isServerInstall() {
+		server()
+	} else {
+		desktop()
+	}
 
 	r.Run()
+}
+
+// desktop installs everything that only makes sense with a screen attached
+func desktop() {
+	braveBrowser()
+	thorium()
+	kitty()
+	obsidian()
+	tidal()
+}
+
+// server installs the extras for a headless box, currently the EC2 instance
+// I run Claude Code sessions on
+func server() {
+	r.Add(resources.Pkgs(serverPackages...))
+	sshAgent()
+	autostop()
 }
 
 func zsh() {
@@ -153,23 +201,29 @@ func dotfiles() {
 
 	r.Add(resources.CreateLink("~/.default-golang-pkgs", "~/.default-go-packages"))
 
+	// A fresh server has no ~/.config yet
+	configDir := r.Add(resources.Dir("~/.config"))
+
 	// Neovim configuration
-	r.Add(&resources.Link{Path: "~/.config/nvim", Source: "~/.dotfiles/nvim"}, repo)
+	r.Add(&resources.Link{Path: "~/.config/nvim", Source: "~/.dotfiles/nvim"}, repo, configDir)
 
 	// zsh-theme
 	r.Add(&resources.Link{Path: "~/.oh-my-zsh/custom/themes/surminus.zsh-theme", Source: "~/.dotfiles/surminus.zsh-theme"}, repo)
 
 	// Mise
-	r.Add(&resources.Link{Path: "~/.config/mise", Source: "~/.dotfiles/mise"}, repo)
+	r.Add(&resources.Link{Path: "~/.config/mise", Source: "~/.dotfiles/mise"}, repo, configDir)
 
 	// Kitty config
-	r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo)
+	if !isServerInstall() {
+		r.Add(&resources.Link{Path: "~/.config/kitty", Source: "~/.dotfiles/kitty"}, repo, configDir)
+	}
 
 	// Claude Code
 	claudeCfgDir := r.Add(resources.Dir("~/.claude"))
 	r.Add(&resources.Link{Path: "~/.claude/CLAUDE.md", Source: "~/.dotfiles/claude/CLAUDE.md"}, repo, claudeCfgDir)
 	r.Add(&resources.Link{Path: "~/.claude/settings.json", Source: "~/.dotfiles/claude/settings.json"}, repo, claudeCfgDir)
 	r.Add(&resources.Link{Path: "~/.claude/statusline-command.sh", Source: "~/.dotfiles/claude/statusline-command.sh"}, repo, claudeCfgDir)
+	r.Add(&resources.Link{Path: "~/.claude/hooks", Source: "~/.dotfiles/claude/hooks"}, repo, claudeCfgDir)
 
 	claudeSkillsDir := r.Add(resources.Dir("~/.claude/skills"))
 
@@ -187,9 +241,11 @@ func dotfiles() {
 	r.Add(resources.Dir("~/claude"))
 
 	// Configure fonts
-	r.Add(resources.CreateLink("~/.local/share/fonts", "~/.dotfiles/fonts"), repo)
-	if isKDE() {
-		r.Add(resources.CreateFile("/etc/fonts/conf.avail/56-kubuntu-noto.conf", resources.EmbeddedFile(files, "files/56-kubuntu-noto.conf")))
+	if !isServerInstall() {
+		r.Add(resources.CreateLink("~/.local/share/fonts", "~/.dotfiles/fonts"), repo)
+		if isKDE() {
+			r.Add(resources.CreateFile("/etc/fonts/conf.avail/56-kubuntu-noto.conf", resources.EmbeddedFile(files, "files/56-kubuntu-noto.conf")))
+		}
 	}
 }
 
@@ -197,6 +253,9 @@ func tools() {
 	r.Add(&resources.Git{Path: "~/.fzf", URL: "https://github.com/junegunn/fzf.git", Reference: "refs/heads/master"})
 
 	pkgs := packages
+	if !isServerInstall() {
+		pkgs = append(pkgs, desktopPackages...)
+	}
 	if isHomeInstall() {
 		pkgs = append(pkgs, homePackages...)
 	}
@@ -205,11 +264,11 @@ func tools() {
 
 	// Install delta
 	v := packageVersions["delta"]
-	installDebPkg("git-delta", v, fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_amd64.deb", v, v))
+	installDebPkg("git-delta", v, fmt.Sprintf("https://github.com/dandavison/delta/releases/download/%s/git-delta_%s_%s.deb", v, v, debArch()))
 
 	// Install zoxide
 	v = packageVersions["zoxide"]
-	installDebPkg("zoxide", v, fmt.Sprintf("https://github.com/ajeetdsouza/zoxide/releases/download/v%s/zoxide_%s-1_amd64.deb", v, v))
+	installDebPkg("zoxide", v, fmt.Sprintf("https://github.com/ajeetdsouza/zoxide/releases/download/v%s/zoxide_%s-1_%s.deb", v, v, debArch()))
 
 	// toolkit is always on PATH
 	r.Add(&resources.Git{Path: "~/surminus/toolkit", URL: "git@github.com:surminus/toolkit", Reference: "refs/heads/main"})
@@ -284,7 +343,7 @@ func deleteSnap() {
 
 	// Clean up any lingering snap mount units and data left behind after snapd removal
 	r.Add(&resources.Execute{
-		Command: "find /etc/systemd/system -name 'snap*.mount' -o -name 'snap.*.service' -o -name 'snap.*.timer' | xargs --no-run-if-empty rm -f && find /etc/systemd/system -name 'snapd*' | xargs --no-run-if-empty rm -f && systemctl daemon-reload",
+		Command: "find /etc/systemd/system -name 'snap*.mount' -o -name 'snap.*.service' -o -name 'snap.*.timer' | xargs --no-run-if-empty rm -f && find /etc/systemd/system -name 'snapd*' | xargs --no-run-if-empty rm -rf && systemctl daemon-reload",
 		Unless:  "test ! -d /var/lib/snapd",
 	}, deleteSnap)
 	r.Add(&resources.Execute{
@@ -342,12 +401,24 @@ func isHomeInstall() bool {
 	return viaduct.FileExists(viaduct.ExpandPath("~/.myducthome"))
 }
 
+// For a server install, touch ~/.myductserver to skip everything that needs
+// a desktop and install the headless extras instead
+func isServerInstall() bool {
+	return viaduct.FileExists(viaduct.ExpandPath("~/.myductserver"))
+}
+
+// debArch is the Debian package architecture name, which happens to match
+// the Go one (amd64, arm64)
+func debArch() string {
+	return viaduct.Attribute.Arch
+}
+
 func github() {
 	r.Add(resources.Pkg("gh"),
 		r.Add(&resources.Apt{
 			Distribution:  "stable",
 			Name:          "github",
-			Parameters:    map[string]string{"arch": "amd64"},
+			Parameters:    map[string]string{"arch": debArch()},
 			SigningKeyURL: "https://cli.github.com/packages/githubcli-archive-keyring.gpg",
 			URI:           "https://cli.github.com/packages",
 			Update:        true,
@@ -390,12 +461,18 @@ func neovim() {
 	// install
 	r.Add(&resources.Package{Names: []string{"neovim"}, Uninstall: true})
 
-	tmp := viaduct.TmpFile("nvim-linux-x86_64.tar.gz")
+	// Neovim names its arm64 build "arm64", not "aarch64"
+	arch := "x86_64"
+	if viaduct.Attribute.Arch == "arm64" {
+		arch = "arm64"
+	}
+
+	tmp := viaduct.TmpFile(fmt.Sprintf("nvim-linux-%s.tar.gz", arch))
 	r.Chain(
-		&resources.Download{URL: "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz", Path: tmp},
+		&resources.Download{URL: fmt.Sprintf("https://github.com/neovim/neovim/releases/latest/download/nvim-linux-%s.tar.gz", arch), Path: tmp},
 		&resources.Directory{Path: "/usr/share/nvim", Delete: true},
 		resources.Extract(tmp, "/usr/share"),
-		resources.CreateLink("/usr/share/nvim", "/usr/share/nvim-linux-x86_64"),
+		resources.CreateLink("/usr/share/nvim", fmt.Sprintf("/usr/share/nvim-linux-%s", arch)),
 	)
 }
 
@@ -403,7 +480,7 @@ func mise() {
 	dep := r.Add(&resources.Apt{
 		Distribution:  "stable",
 		Name:          "mise",
-		Parameters:    map[string]string{"arch": "amd64"},
+		Parameters:    map[string]string{"arch": debArch()},
 		SigningKeyURL: "https://mise.jdx.dev/gpg-key.pub",
 		URI:           "https://mise.jdx.dev/deb ",
 		Update:        true,
@@ -419,8 +496,14 @@ func obsidian() {
 }
 
 func treesitter() {
+	// tree-sitter names its builds "x64" and "arm64"
+	arch := "x64"
+	if viaduct.Attribute.Arch == "arm64" {
+		arch = "arm64"
+	}
+
 	v := packageVersions["tree-sitter"]
-	source := fmt.Sprintf("https://github.com/tree-sitter/tree-sitter/releases/download/v%s/tree-sitter-cli-linux-x64.zip", v)
+	source := fmt.Sprintf("https://github.com/tree-sitter/tree-sitter/releases/download/v%s/tree-sitter-cli-linux-%s.zip", v, arch)
 	tmp := viaduct.TmpFile("tree-sitter.zip")
 	binDir := viaduct.ExpandPath("~/bin")
 	r.Chain(
@@ -428,4 +511,89 @@ func treesitter() {
 		&resources.Archive{Path: tmp, Dest: binDir, Pick: []string{"tree-sitter"}},
 		resources.Exec(fmt.Sprintf("chmod +x %s/tree-sitter", binDir)),
 	)
+}
+
+// claudeCode installs Claude Code with the native installer, which puts the
+// binary in ~/.local/bin and keeps itself up to date from there
+func claudeCode() {
+	u := viaduct.Attribute.User
+	r.Add(&resources.Execute{
+		Command: fmt.Sprintf("runuser -u %s -- bash -c 'curl -fsSL https://claude.ai/install.sh | bash'", u.Username),
+		Unless:  fmt.Sprintf("test -x %s/.local/bin/claude", u.HomeDir),
+	})
+}
+
+// tmux installs the tmux plugin manager and the plugins tmux.conf asks for,
+// so a fresh machine does not need a manual prefix + I. The installer reads
+// the plugin list from a running tmux server, and tpm initialises in the
+// background when the server starts, hence the throwaway session and the
+// pause before asking it to install anything.
+func tmux() {
+	u := viaduct.Attribute.User
+	tpm := r.Add(&resources.Git{Path: "~/.tmux/plugins/tpm", URL: "https://github.com/tmux-plugins/tpm", Reference: "refs/heads/master"})
+	r.Add(&resources.Execute{
+		Command: fmt.Sprintf("runuser -u %s -- bash -c 'tmux new-session -d -s tpm-install && sleep 3 && ~/.tmux/plugins/tpm/bin/install_plugins; tmux kill-session -t tpm-install'", u.Username),
+		Unless:  fmt.Sprintf("test -d %s/.tmux/plugins/tmux-resurrect", u.HomeDir),
+	}, tpm)
+}
+
+// uv installs uv and uvx, which my MCP servers run under. Like Claude Code it
+// installs into ~/.local/bin and updates itself from there.
+//
+// UV_NO_MODIFY_PATH stops the installer appending to ~/.zshrc, which is a
+// symlink into the dotfiles repo and so would show up as a dirty checkout.
+func uv() {
+	u := viaduct.Attribute.User
+	r.Add(&resources.Execute{
+		Command: fmt.Sprintf("runuser -u %s -- bash -c 'curl -LsSf https://astral.sh/uv/install.sh | UV_NO_MODIFY_PATH=1 sh'", u.Username),
+		Unless:  fmt.Sprintf("test -x %s/.local/bin/uv", u.HomeDir),
+	})
+}
+
+// sshAgent runs one ssh-agent per login through systemd, so every shell and
+// tmux window on the server shares it and sudo myduct can reach my key. The
+// desktop gets its agent from KDE. AddKeysToAgent means the first ssh or git
+// that uses the key loads it, no ssh-add. Lingering keeps the user manager,
+// and so the agent, running whether or not I am logged in.
+func sshAgent() {
+	u := viaduct.Attribute.User
+
+	unitDir := r.Add(resources.Dir("~/.config/systemd/user"))
+	unit := r.Add(resources.CreateFile("~/.config/systemd/user/ssh-agent.service", resources.EmbeddedFile(files, "files/ssh-agent.service")), unitDir)
+
+	linger := r.Add(&resources.Execute{
+		Command: fmt.Sprintf("loginctl enable-linger %s", u.Username),
+		Unless:  fmt.Sprintf("test -f /var/lib/systemd/linger/%s", u.Username),
+	})
+
+	r.Add(&resources.Execute{
+		Command: fmt.Sprintf("systemctl --user -M %s@ daemon-reload && systemctl --user -M %s@ enable --now ssh-agent", u.Username, u.Username),
+		Unless:  fmt.Sprintf("systemctl --user -M %s@ is-enabled ssh-agent", u.Username),
+	}, unit, linger)
+
+	r.Add(resources.AppendLine("~/.ssh/config", "AddKeysToAgent yes"))
+}
+
+// autostop powers the server off after half an hour with nobody logged in
+// and nothing running, so a forgotten box does not run up a bill
+func autostop() {
+	script := r.Add(&resources.File{
+		Path:        "/usr/local/bin/claude-box-autostop",
+		Content:     resources.EmbeddedFile(files, "files/claude-box-autostop.sh"),
+		Permissions: resources.Permissions{Mode: 0o755, Root: true},
+	})
+	// The units run as root, so root has to own them too. Otherwise viaduct
+	// hands them to my user and anything running as me can rewrite ExecStart.
+	service := r.Add(&resources.File{
+		Path:        "/etc/systemd/system/claude-box-autostop.service",
+		Content:     resources.EmbeddedFile(files, "files/claude-box-autostop.service"),
+		Permissions: resources.Permissions{Mode: 0o644, Root: true},
+	})
+	timer := r.Add(&resources.File{
+		Path:        "/etc/systemd/system/claude-box-autostop.timer",
+		Content:     resources.EmbeddedFile(files, "files/claude-box-autostop.timer"),
+		Permissions: resources.Permissions{Mode: 0o644, Root: true},
+	})
+	reload := r.Add(resources.Exec("systemctl daemon-reload"), script, service, timer)
+	r.Add(&resources.Service{Name: "claude-box-autostop.timer", Action: "start", Enable: true}, reload)
 }
