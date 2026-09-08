@@ -1,0 +1,6 @@
+[Unit]
+Description=Power off the box after it has been idle for a while
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/claude-box-autostop
