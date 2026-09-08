@@ -30,6 +30,7 @@ var dotFiles = []string{
 	"gemrc",
 	"gitconfig",
 	"ripgreprc",
+	"tmux.conf",
 	"zshrc",
 }
 
@@ -148,6 +149,7 @@ func main() {
 	treesitter()
 	claudeCode()
 	uv()
+	tmux()
 
 	if isServerInstall() {
 		server()
@@ -506,6 +508,20 @@ func claudeCode() {
 		Command: fmt.Sprintf("runuser -u %s -- bash -c 'curl -fsSL https://claude.ai/install.sh | bash'", u.Username),
 		Unless:  fmt.Sprintf("test -x %s/.local/bin/claude", u.HomeDir),
 	})
+}
+
+// tmux installs the tmux plugin manager and the plugins tmux.conf asks for,
+// so a fresh machine does not need a manual prefix + I. The installer reads
+// the plugin list from a running tmux server, and tpm initialises in the
+// background when the server starts, hence the throwaway session and the
+// pause before asking it to install anything.
+func tmux() {
+	u := viaduct.Attribute.User
+	tpm := r.Add(&resources.Git{Path: "~/.tmux/plugins/tpm", URL: "https://github.com/tmux-plugins/tpm", Reference: "refs/heads/master"})
+	r.Add(&resources.Execute{
+		Command: fmt.Sprintf("runuser -u %s -- bash -c 'tmux new-session -d -s tpm-install && sleep 3 && ~/.tmux/plugins/tpm/bin/install_plugins; tmux kill-session -t tpm-install'", u.Username),
+		Unless:  fmt.Sprintf("test -d %s/.tmux/plugins/tmux-resurrect", u.HomeDir),
+	}, tpm)
 }
 
 // uv installs uv and uvx, which my MCP servers run under. Like Claude Code it
