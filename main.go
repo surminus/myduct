@@ -315,10 +315,14 @@ func gpg() {
 	// into it fails. Create it first (0700, or gpg refuses to use it).
 	dir := r.Add(&resources.Directory{Path: "~/.gnupg", Permissions: resources.Permissions{Mode: 0o700}})
 
+	// Not installed by default on Kubuntu, and gpg-agent fails with "No
+	// PINentry" if the configured program is missing.
+	pinentry := r.Add(resources.Pkg("pinentry-gnome3"))
+
 	r.Add(resources.CreateFile("~/.gnupg/gpg-agent.conf", `default-cache-ttl 86400
 max-cache-ttl 86400
 pinentry-program /usr/bin/pinentry-gnome3
-`), dir)
+`), dir, pinentry)
 }
 
 func ubuntuDistribution() string {
