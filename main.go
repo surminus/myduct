@@ -16,12 +16,12 @@ import (
 var files embed.FS
 
 var packageVersions = map[string]string{
-	"delta":           "0.18.2",
-	"kitty":           "0.47.2",
+	"delta":           "0.19.2",
+	"kitty":           "0.49.1",
 	"obsidian":        "1.8.9",
 	"thorium-browser": "138.0.7204.303",
 	"tidal-hifi":      "5.19.0",
-	"tree-sitter":     "0.26.8",
+	"tree-sitter":     "0.27.0",
 	"zoxide":          "0.10.0",
 }
 
