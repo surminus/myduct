@@ -163,6 +163,7 @@ func main() {
 
 // desktop installs everything that only makes sense with a screen attached
 func desktop() {
+	desktopSSHAgent()
 	braveBrowser()
 	thorium()
 	kitty()
@@ -553,10 +554,31 @@ func uv() {
 	})
 }
 
+// desktopSSHAgent masks gcr-ssh-agent so the desktop uses the stock OpenSSH
+// agent (ssh-agent.socket, at /run/user/<uid>/openssh_agent). Ubuntu enables
+// gcr's wrapper by default and it wins SSH_AUTH_SOCK, but on Plasma it hangs:
+// it advertises keys from ~/.ssh/*.pub, then spawns an ssh-add to unlock them
+// that spins forever, so ssh stalls after "Server accepts key". Plasma already
+// sets SSH_ASKPASS to ksshaskpass, so AddKeysToAgent prompts there instead.
+// AddKeysToAgent goes in a system drop-in because appending it to
+// ~/.ssh/config puts it inside the last Host block. SSH_AUTH_SOCK only
+// switches over on the next login.
+func desktopSSHAgent() {
+	u := viaduct.Attribute.User
+
+	r.Add(&resources.Execute{
+		Command: fmt.Sprintf("systemctl --user -M %s@ mask --now gcr-ssh-agent.socket gcr-ssh-agent.service", u.Username),
+		Unless:  fmt.Sprintf("test \"$(systemctl --user -M %s@ is-enabled gcr-ssh-agent.socket)\" = masked", u.Username),
+	})
+
+	r.Add(resources.CreateFile("/etc/ssh/ssh_config.d/add-keys-to-agent.conf", "AddKeysToAgent yes\n"))
+}
+
 // sshAgent runs one ssh-agent per login through systemd, so every shell and
 // tmux window on the server shares it and sudo myduct can reach my key. The
-// desktop gets its agent from KDE. AddKeysToAgent means the first ssh or git
-// that uses the key loads it, no ssh-add. Lingering keeps the user manager,
+// desktop uses the stock OpenSSH agent, see desktopSSHAgent. AddKeysToAgent
+// means the first ssh or git that uses the key loads it, no ssh-add.
+// Lingering keeps the user manager,
 // and so the agent, running whether or not I am logged in.
 func sshAgent() {
 	u := viaduct.Attribute.User
