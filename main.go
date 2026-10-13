@@ -101,6 +101,7 @@ var claudeSkills = []string{
 	"copilot",
 	"explain",
 	"git",
+	"pr-check-body",
 	"repush",
 }
 
