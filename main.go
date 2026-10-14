@@ -99,10 +99,12 @@ var homePackages = []string{
 // skills to symlink
 var claudeSkills = []string{
 	"copilot",
+	"draft-pr",
 	"explain",
 	"git",
 	"pr-check-body",
 	"repush",
+	"request-review",
 }
 
 // agents to symlink
