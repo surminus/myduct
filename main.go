@@ -102,9 +102,11 @@ var claudeSkills = []string{
 	"draft-pr",
 	"explain",
 	"git",
+	"interview",
 	"pr-check-body",
 	"repush",
 	"request-review",
+	"test-my-understanding",
 }
 
 // agents to symlink
