@@ -111,6 +111,13 @@ var claudeSkills = []string{
 	"test-my-understanding",
 }
 
+// skills removed from the dotfiles, whose symlinks would otherwise dangle
+var removedClaudeSkills = []string{
+	"eli5",
+	"engineering-team",
+	"personality",
+}
+
 // agents to symlink
 var claudeAgents = []string{
 	"code-fixer",
@@ -246,6 +253,10 @@ func dotfiles() {
 
 	for _, skill := range claudeSkills {
 		r.Add(&resources.Link{Path: "~/.claude/skills/" + skill, Source: "~/.dotfiles/claude/skills/" + skill}, repo, claudeCfgDir, claudeSkillsDir)
+	}
+
+	for _, skill := range removedClaudeSkills {
+		r.Add(resources.DeleteLink("~/.claude/skills/" + skill))
 	}
 
 	claudeAgentsDir := r.Add(resources.Dir("~/.claude/agents"))
