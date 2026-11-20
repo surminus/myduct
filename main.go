@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -119,22 +120,33 @@ var claudeAgents = []string{
 var r = viaduct.New()
 
 func main() {
-	if viaduct.Attribute.User.Username != "root" {
+	if _, err := viaduct.ParseFlags(); err != nil {
+		log.Fatal(err)
+	}
+
+	attrs, err := viaduct.LoadAttributes()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if attrs.User.Username != "root" {
 		log.Fatal("Must run as root")
 	}
 
-	viaduct.Attribute.SetUser("laura")
+	if err := attrs.SetUser("laura"); err != nil {
+		log.Fatal(err)
+	}
 
 	if isHomeInstall() {
-		viaduct.Log("Detected home install!")
+		note("Detected home install!")
 	}
 
 	if isServerInstall() {
-		viaduct.Log("Detected server install!")
+		note("Detected server install!")
 	}
 
-	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "bin")})
-	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attribute.User.HomeDir, "tmp")})
+	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attributes().User.HomeDir, "bin")})
+	r.Add(&resources.Directory{Path: filepath.Join(viaduct.Attributes().User.HomeDir, "tmp")})
 
 	// Core
 	zsh()
@@ -180,13 +192,13 @@ func desktop() {
 // server installs the extras for a headless box, currently the EC2 instance
 // I run Claude Code sessions on
 func server() {
-	r.Add(resources.Pkgs(serverPackages...))
+	r.Add(latestPkgs(serverPackages...))
 	sshAgent()
 	autostop()
 }
 
 func zsh() {
-	r.Add(resources.Pkg("zsh"))
+	r.Add(latestPkgs("zsh"))
 	zsh := r.Add(&resources.Git{Path: "~/.oh-my-zsh", URL: "https://github.com/ohmyzsh/ohmyzsh.git", Reference: "refs/heads/master"})
 	r.Add(&resources.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-autosuggestions", URL: "https://github.com/zsh-users/zsh-autosuggestions", Reference: "refs/heads/master"}, zsh)
 	r.Add(&resources.Git{Path: "~/.oh-my-zsh/custom/plugins/zsh-completions", URL: "https://github.com/zsh-users/zsh-completions", Reference: "refs/heads/master"}, zsh)
@@ -249,7 +261,7 @@ func dotfiles() {
 	if !isServerInstall() {
 		r.Add(resources.CreateLink("~/.local/share/fonts", "~/.dotfiles/fonts"), repo)
 		if isKDE() {
-			r.Add(resources.CreateFile("/etc/fonts/conf.avail/56-kubuntu-noto.conf", resources.EmbeddedFile(files, "files/56-kubuntu-noto.conf")))
+			r.Add(resources.CreateFile("/etc/fonts/conf.avail/56-kubuntu-noto.conf", viaduct.Must(resources.EmbeddedFile(files, "files/56-kubuntu-noto.conf"))))
 		}
 	}
 }
@@ -265,7 +277,7 @@ func tools() {
 		pkgs = append(pkgs, homePackages...)
 	}
 
-	r.Add(resources.Pkgs(pkgs...))
+	r.Add(latestPkgs(pkgs...))
 
 	// Install delta
 	v := packageVersions["delta"]
@@ -286,17 +298,17 @@ func docker() {
 	apt := r.Add(&resources.Apt{
 		Name:          "docker",
 		URI:           "https://download.docker.com/linux/ubuntu",
-		Parameters:    map[string]string{"arch": viaduct.Attribute.Arch},
+		Parameters:    map[string]string{"arch": viaduct.Attributes().Arch},
 		Source:        "stable",
 		Distribution:  ubuntuDistribution(),
 		SigningKeyURL: "https://download.docker.com/linux/ubuntu/gpg",
 	})
 
-	install := r.Add(resources.Pkg("docker-ce"), r.Add(resources.AptUpdate(), apt))
+	install := r.Add(latestPkgs("docker-ce"), r.Add(resources.AptUpdate(), apt))
 
 	// Add the user to the docker group so they can talk to the daemon
 	r.Add(&resources.User{
-		Name:   viaduct.Attribute.User.Username,
+		Name:   viaduct.Attributes().User.Username,
 		Groups: []string{"docker"},
 	}, install)
 }
@@ -322,7 +334,7 @@ func gpg() {
 
 	// Not installed by default on Kubuntu, and gpg-agent fails with "No
 	// PINentry" if the configured program is missing.
-	pinentry := r.Add(resources.Pkg("pinentry-gnome3"))
+	pinentry := r.Add(latestPkgs("pinentry-gnome3"))
 
 	r.Add(resources.CreateFile("~/.gnupg/gpg-agent.conf", `default-cache-ttl 86400
 max-cache-ttl 86400
@@ -331,7 +343,7 @@ pinentry-program /usr/bin/pinentry-gnome3
 }
 
 func ubuntuDistribution() string {
-	distribution := viaduct.Attribute.Platform.UbuntuCodename
+	distribution := viaduct.Attributes().Platform.UbuntuCodename
 	if distribution == "mantic" || distribution == "lunar" {
 		distribution = "jammy"
 	}
@@ -348,7 +360,7 @@ func deleteSnap() {
 	hold := resources.AptHold("snapd")
 	hold.Unless = "apt-mark showhold | grep -q snapd"
 	holdSnap := r.Add(hold, deleteSnap)
-	r.Add(resources.CreateFile("/etc/apt/preferences.d/nosnap.pref", resources.EmbeddedFile(files, "files/nosnap.pref")), deleteSnap, holdSnap)
+	r.Add(resources.CreateFile("/etc/apt/preferences.d/nosnap.pref", viaduct.Must(resources.EmbeddedFile(files, "files/nosnap.pref"))), deleteSnap, holdSnap)
 
 	// Clean up any lingering snap mount units and data left behind after snapd removal
 	r.Add(&resources.Execute{
@@ -371,7 +383,7 @@ func braveBrowser() {
 		Format:        resources.Sources,
 	})
 
-	r.Add(resources.Pkg("brave-browser"), dep)
+	r.Add(latestPkgs("brave-browser"), dep)
 }
 
 // Thorium is an optimised Chromium fork. I install the AVX2 build to match
@@ -388,15 +400,15 @@ func tidal() {
 }
 
 func installDebPkg(name, version, source string, deps ...*viaduct.Resource) {
-	currentVersion := viaduct.CommandOutput(fmt.Sprintf("dpkg -l | awk '/%s/ {print $3}'", name))
+	currentVersion := commandOutput(fmt.Sprintf("dpkg -l | awk '/%s/ {print $3}'", name))
 
 	if !strings.HasPrefix(currentVersion, version) {
-		viaduct.Log(name, " =>", currentVersion)
-		pkg := viaduct.TmpFile(fmt.Sprintf("%s.deb", name))
+		note("%s => %s", name, currentVersion)
+		pkg := viaduct.Must(viaduct.TmpFile(fmt.Sprintf("%s.deb", name)))
 		deb := r.Add(resources.Wget(source, pkg), deps...)
 		r.Add(resources.InstallDeb(pkg), deb)
 	} else {
-		viaduct.Log(name, " up to date")
+		note("%s up to date", name)
 	}
 }
 
@@ -419,11 +431,11 @@ func isServerInstall() bool {
 // debArch is the Debian package architecture name, which happens to match
 // the Go one (amd64, arm64)
 func debArch() string {
-	return viaduct.Attribute.Arch
+	return viaduct.Attributes().Arch
 }
 
 func github() {
-	r.Add(resources.Pkg("gh"),
+	r.Add(latestPkgs("gh"),
 		r.Add(&resources.Apt{
 			Distribution:  "stable",
 			Name:          "github",
@@ -440,13 +452,13 @@ func kitty() {
 	r.Add(&resources.Package{Names: []string{"kitty"}, Uninstall: true})
 
 	v := packageVersions["kitty"]
-	currentVersion := viaduct.CommandOutput("kitty --version | awk '{print $2}'")
+	currentVersion := commandOutput("kitty --version | awk '{print $2}'")
 
 	installDir := fmt.Sprintf("/usr/share/kitty-%s", v)
 
 	if currentVersion != v {
-		viaduct.Log("kitty", " =>", currentVersion)
-		tmp := viaduct.TmpFile("kitty-x86_64.txz")
+		note("kitty => %s", currentVersion)
+		tmp := viaduct.Must(viaduct.TmpFile("kitty-x86_64.txz"))
 		dl := r.Add(&resources.Download{
 			URL:  fmt.Sprintf("https://github.com/kovidgoyal/kitty/releases/download/v%s/kitty-%s-x86_64.txz", v, v),
 			Path: tmp,
@@ -458,10 +470,10 @@ func kitty() {
 		r.Add(resources.CreateLink("/usr/bin/kitty", "/usr/share/kitty/bin/kitty"), unpack)
 		r.Add(resources.CreateLink("/usr/bin/kitten", "/usr/share/kitty/bin/kitten"), unpack)
 	} else {
-		viaduct.Log("kitty", " up to date")
+		note("kitty up to date")
 	}
 
-	r.Add(resources.CreateFile("/usr/share/applications/kitty.desktop", resources.EmbeddedFile(files, "files/kitty.desktop")))
+	r.Add(resources.CreateFile("/usr/share/applications/kitty.desktop", viaduct.Must(resources.EmbeddedFile(files, "files/kitty.desktop"))))
 	r.Add(resources.CreateLink("/usr/share/icons/hicolor/scalable/apps/kitty.svg", "/usr/share/kitty/share/icons/hicolor/scalable/apps/kitty.svg"))
 }
 
@@ -472,11 +484,11 @@ func neovim() {
 
 	// Neovim names its arm64 build "arm64", not "aarch64"
 	arch := "x86_64"
-	if viaduct.Attribute.Arch == "arm64" {
+	if viaduct.Attributes().Arch == "arm64" {
 		arch = "arm64"
 	}
 
-	tmp := viaduct.TmpFile(fmt.Sprintf("nvim-linux-%s.tar.gz", arch))
+	tmp := viaduct.Must(viaduct.TmpFile(fmt.Sprintf("nvim-linux-%s.tar.gz", arch)))
 	r.Chain(
 		&resources.Download{URL: fmt.Sprintf("https://github.com/neovim/neovim/releases/latest/download/nvim-linux-%s.tar.gz", arch), Path: tmp},
 		&resources.Directory{Path: "/usr/share/nvim", Delete: true},
@@ -495,7 +507,7 @@ func mise() {
 		Update:        true,
 	})
 
-	r.Add(resources.Pkg("mise"), dep)
+	r.Add(latestPkgs("mise"), dep)
 }
 
 func obsidian() {
@@ -507,13 +519,13 @@ func obsidian() {
 func treesitter() {
 	// tree-sitter names its builds "x64" and "arm64"
 	arch := "x64"
-	if viaduct.Attribute.Arch == "arm64" {
+	if viaduct.Attributes().Arch == "arm64" {
 		arch = "arm64"
 	}
 
 	v := packageVersions["tree-sitter"]
 	source := fmt.Sprintf("https://github.com/tree-sitter/tree-sitter/releases/download/v%s/tree-sitter-cli-linux-%s.zip", v, arch)
-	tmp := viaduct.TmpFile("tree-sitter.zip")
+	tmp := viaduct.Must(viaduct.TmpFile("tree-sitter.zip"))
 	binDir := viaduct.ExpandPath("~/bin")
 	r.Chain(
 		&resources.Download{URL: source, Path: tmp},
@@ -525,7 +537,7 @@ func treesitter() {
 // claudeCode installs Claude Code with the native installer, which puts the
 // binary in ~/.local/bin and keeps itself up to date from there
 func claudeCode() {
-	u := viaduct.Attribute.User
+	u := viaduct.Attributes().User
 	r.Add(&resources.Execute{
 		Command: fmt.Sprintf("runuser -u %s -- bash -c 'curl -fsSL https://claude.ai/install.sh | bash'", u.Username),
 		Unless:  fmt.Sprintf("test -x %s/.local/bin/claude", u.HomeDir),
@@ -538,7 +550,7 @@ func claudeCode() {
 // background when the server starts, hence the throwaway session and the
 // pause before asking it to install anything.
 func tmux() {
-	u := viaduct.Attribute.User
+	u := viaduct.Attributes().User
 	tpm := r.Add(&resources.Git{Path: "~/.tmux/plugins/tpm", URL: "https://github.com/tmux-plugins/tpm", Reference: "refs/heads/master"})
 	r.Add(&resources.Execute{
 		Command: fmt.Sprintf("runuser -u %s -- bash -c 'tmux new-session -d -s tpm-install && sleep 3 && ~/.tmux/plugins/tpm/bin/install_plugins; tmux kill-session -t tpm-install'", u.Username),
@@ -552,7 +564,7 @@ func tmux() {
 // UV_NO_MODIFY_PATH stops the installer appending to ~/.zshrc, which is a
 // symlink into the dotfiles repo and so would show up as a dirty checkout.
 func uv() {
-	u := viaduct.Attribute.User
+	u := viaduct.Attributes().User
 	r.Add(&resources.Execute{
 		Command: fmt.Sprintf("runuser -u %s -- bash -c 'curl -LsSf https://astral.sh/uv/install.sh | UV_NO_MODIFY_PATH=1 sh'", u.Username),
 		Unless:  fmt.Sprintf("test -x %s/.local/bin/uv", u.HomeDir),
@@ -569,7 +581,7 @@ func uv() {
 // ~/.ssh/config puts it inside the last Host block. SSH_AUTH_SOCK only
 // switches over on the next login.
 func desktopSSHAgent() {
-	u := viaduct.Attribute.User
+	u := viaduct.Attributes().User
 
 	r.Add(&resources.Execute{
 		Command: fmt.Sprintf("systemctl --user -M %s@ mask --now gcr-ssh-agent.socket gcr-ssh-agent.service", u.Username),
@@ -586,10 +598,10 @@ func desktopSSHAgent() {
 // Lingering keeps the user manager,
 // and so the agent, running whether or not I am logged in.
 func sshAgent() {
-	u := viaduct.Attribute.User
+	u := viaduct.Attributes().User
 
 	unitDir := r.Add(resources.Dir("~/.config/systemd/user"))
-	unit := r.Add(resources.CreateFile("~/.config/systemd/user/ssh-agent.service", resources.EmbeddedFile(files, "files/ssh-agent.service")), unitDir)
+	unit := r.Add(resources.CreateFile("~/.config/systemd/user/ssh-agent.service", viaduct.Must(resources.EmbeddedFile(files, "files/ssh-agent.service"))), unitDir)
 
 	linger := r.Add(&resources.Execute{
 		Command: fmt.Sprintf("loginctl enable-linger %s", u.Username),
@@ -609,21 +621,48 @@ func sshAgent() {
 func autostop() {
 	script := r.Add(&resources.File{
 		Path:        "/usr/local/bin/claude-box-autostop",
-		Content:     resources.EmbeddedFile(files, "files/claude-box-autostop.sh"),
+		Content:     viaduct.Must(resources.EmbeddedFile(files, "files/claude-box-autostop.sh")),
 		Permissions: resources.Permissions{Mode: 0o755, Root: true},
 	})
 	// The units run as root, so root has to own them too. Otherwise viaduct
 	// hands them to my user and anything running as me can rewrite ExecStart.
 	service := r.Add(&resources.File{
 		Path:        "/etc/systemd/system/claude-box-autostop.service",
-		Content:     resources.EmbeddedFile(files, "files/claude-box-autostop.service"),
+		Content:     viaduct.Must(resources.EmbeddedFile(files, "files/claude-box-autostop.service")),
 		Permissions: resources.Permissions{Mode: 0o644, Root: true},
 	})
 	timer := r.Add(&resources.File{
 		Path:        "/etc/systemd/system/claude-box-autostop.timer",
-		Content:     resources.EmbeddedFile(files, "files/claude-box-autostop.timer"),
+		Content:     viaduct.Must(resources.EmbeddedFile(files, "files/claude-box-autostop.timer")),
 		Permissions: resources.Permissions{Mode: 0o644, Root: true},
 	})
 	reload := r.Add(resources.Exec("systemctl daemon-reload"), script, service, timer)
 	r.Add(&resources.Service{Name: "claude-box-autostop.timer", Action: "start", Enable: true}, reload)
+}
+
+// commandOutput runs a shell command while the manifest is built, returning
+// its trimmed output, or nothing if it fails
+func commandOutput(command string) string {
+	out, err := exec.Command("bash", "-c", command).Output()
+	if err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(string(out))
+}
+
+// note logs a message while the manifest is built, unless the run was asked
+// to be quiet or to print JSON
+func note(format string, args ...any) {
+	if viaduct.Cli.Quiet || viaduct.Cli.Silent || viaduct.Cli.JSON {
+		return
+	}
+
+	log.Printf(format, args...)
+}
+
+// latestPkgs installs packages and upgrades any that have a newer version,
+// which Package stopped doing by default in viaduct v1
+func latestPkgs(names ...string) *resources.Package {
+	return &resources.Package{Names: names, Latest: true}
 }
