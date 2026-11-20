@@ -355,11 +355,8 @@ func ubuntuDistribution() string {
 func deleteSnap() {
 	deleteSnap := r.Add(&resources.Package{Names: []string{"snapd"}, Uninstall: true})
 
-	// AptHold has no built-in idempotency, and re-holding the now-purged
-	// snapd package errors, so guard on it not already being held
-	hold := resources.AptHold("snapd")
-	hold.Unless = "apt-mark showhold | grep -q snapd"
-	holdSnap := r.Add(hold, deleteSnap)
+	// HoldPkg reads apt-mark showhold first, so an existing hold is a noop
+	holdSnap := r.Add(resources.HoldPkg("snapd"), deleteSnap)
 	r.Add(resources.CreateFile("/etc/apt/preferences.d/nosnap.pref", viaduct.Must(resources.EmbeddedFile(files, "files/nosnap.pref"))), deleteSnap, holdSnap)
 
 	// Clean up any lingering snap mount units and data left behind after snapd removal
@@ -458,6 +455,7 @@ func kitty() {
 
 	if currentVersion != v {
 		note("kitty => %s", currentVersion)
+		// Archive has no xz support, so tar unpacks it
 		tmp := viaduct.Must(viaduct.TmpFile("kitty-x86_64.txz"))
 		dl := r.Add(&resources.Download{
 			URL:  fmt.Sprintf("https://github.com/kovidgoyal/kitty/releases/download/v%s/kitty-%s-x86_64.txz", v, v),
@@ -530,7 +528,7 @@ func treesitter() {
 	r.Chain(
 		&resources.Download{URL: source, Path: tmp},
 		&resources.Archive{Path: tmp, Dest: binDir, Pick: []string{"tree-sitter"}},
-		resources.Exec(fmt.Sprintf("chmod +x %s/tree-sitter", binDir)),
+		resources.SetPermissions(filepath.Join(binDir, "tree-sitter"), 0o755),
 	)
 }
 
@@ -539,7 +537,8 @@ func treesitter() {
 func claudeCode() {
 	u := viaduct.Attributes().User
 	r.Add(&resources.Execute{
-		Command: fmt.Sprintf("runuser -u %s -- bash -c 'curl -fsSL https://claude.ai/install.sh | bash'", u.Username),
+		Command: "curl -fsSL https://claude.ai/install.sh | bash",
+		User:    u.Username,
 		Unless:  fmt.Sprintf("test -x %s/.local/bin/claude", u.HomeDir),
 	})
 }
@@ -553,7 +552,8 @@ func tmux() {
 	u := viaduct.Attributes().User
 	tpm := r.Add(&resources.Git{Path: "~/.tmux/plugins/tpm", URL: "https://github.com/tmux-plugins/tpm", Reference: "refs/heads/master"})
 	r.Add(&resources.Execute{
-		Command: fmt.Sprintf("runuser -u %s -- bash -c 'tmux new-session -d -s tpm-install && sleep 3 && ~/.tmux/plugins/tpm/bin/install_plugins; tmux kill-session -t tpm-install'", u.Username),
+		Command: "tmux new-session -d -s tpm-install && sleep 3 && ~/.tmux/plugins/tpm/bin/install_plugins; tmux kill-session -t tpm-install",
+		User:    u.Username,
 		Unless:  fmt.Sprintf("test -d %s/.tmux/plugins/tmux-resurrect", u.HomeDir),
 	}, tpm)
 }
@@ -566,7 +566,9 @@ func tmux() {
 func uv() {
 	u := viaduct.Attributes().User
 	r.Add(&resources.Execute{
-		Command: fmt.Sprintf("runuser -u %s -- bash -c 'curl -LsSf https://astral.sh/uv/install.sh | UV_NO_MODIFY_PATH=1 sh'", u.Username),
+		Command: "curl -LsSf https://astral.sh/uv/install.sh | sh",
+		User:    u.Username,
+		Env:     []string{"UV_NO_MODIFY_PATH=1"},
 		Unless:  fmt.Sprintf("test -x %s/.local/bin/uv", u.HomeDir),
 	})
 }
@@ -608,10 +610,14 @@ func sshAgent() {
 		Unless:  fmt.Sprintf("test -f /var/lib/systemd/linger/%s", u.Username),
 	})
 
+	// Reload only when the unit file changed in this run
+	reload := r.Add(resources.Exec(fmt.Sprintf("systemctl --user -M %s@ daemon-reload", u.Username)), unit, linger)
+	r.OnChange(reload)
+
 	r.Add(&resources.Execute{
-		Command: fmt.Sprintf("systemctl --user -M %s@ daemon-reload && systemctl --user -M %s@ enable --now ssh-agent", u.Username, u.Username),
+		Command: fmt.Sprintf("systemctl --user -M %s@ enable --now ssh-agent", u.Username),
 		Unless:  fmt.Sprintf("systemctl --user -M %s@ is-enabled ssh-agent", u.Username),
-	}, unit, linger)
+	}, reload)
 
 	r.Add(resources.AppendLine("~/.ssh/config", "AddKeysToAgent yes"))
 }
@@ -636,8 +642,10 @@ func autostop() {
 		Content:     viaduct.Must(resources.EmbeddedFile(files, "files/claude-box-autostop.timer")),
 		Permissions: resources.Permissions{Mode: 0o644, Root: true},
 	})
+	// Reload only when one of the files changed in this run
 	reload := r.Add(resources.Exec("systemctl daemon-reload"), script, service, timer)
-	r.Add(&resources.Service{Name: "claude-box-autostop.timer", Action: "start", Enable: true}, reload)
+	r.OnChange(reload)
+	r.Add(&resources.Service{Name: "claude-box-autostop.timer", Action: resources.ServiceStart, Enable: true}, reload)
 }
 
 // commandOutput runs a shell command while the manifest is built, returning
