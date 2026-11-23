@@ -99,6 +99,7 @@ var homePackages = []string{
 
 // skills to symlink
 var claudeSkills = []string{
+	"ci",
 	"copilot",
 	"draft-pr",
 	"explain",
@@ -106,6 +107,7 @@ var claudeSkills = []string{
 	"git",
 	"interview",
 	"pr-check-body",
+	"rebase",
 	"repush",
 	"request-review",
 	"test-my-understanding",
@@ -246,7 +248,6 @@ func dotfiles() {
 	// Claude Code
 	claudeCfgDir := r.Add(resources.Dir("~/.claude"))
 	r.Add(&resources.Link{Path: "~/.claude/CLAUDE.md", Source: "~/.dotfiles/claude/CLAUDE.md"}, repo, claudeCfgDir)
-	r.Add(&resources.Link{Path: "~/.claude/settings.json", Source: "~/.dotfiles/claude/settings.json"}, repo, claudeCfgDir)
 	r.Add(&resources.Link{Path: "~/.claude/statusline-command.sh", Source: "~/.dotfiles/claude/statusline-command.sh"}, repo, claudeCfgDir)
 
 	claudeSkillsDir := r.Add(resources.Dir("~/.claude/skills"))
